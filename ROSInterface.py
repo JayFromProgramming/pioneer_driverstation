@@ -8,12 +8,18 @@ logging = logging.getLogger(__name__)
 
 topic_to_value = {
     # "/usb_cam/camera_info": "camera_info",
+    # '/my_p3at/pose': 'pose',
+    # '/my_p3at/parameter_updates': 'param',
+    # '/my_p3at/parameter_descriptions': 'param',
     "/my_p3at/battery_voltage": "battery_voltage",
-    "/joint_states": "joint_states",
+    # "/joint_states": "joint_states",
     "/my_p3at/motors_state": "motors_state",
     "/my_p3at/cmd_vel": "cmd_vel",
-    "/image_view/output": "Img"
+    # "/image_view/output": "Img"
 }
+
+acceleration = 100
+turn_speed = 0.5
 
 
 class RobotStateMonitor:
@@ -72,6 +78,7 @@ class ROSInterface:
             self.publisher = self._setup_publisher("/driver_station")
             self.key_board_publisher = self._setup_publisher("/my_p3at/cmd_vel", message_type="geometry_msgs/Twist")
             self.robot_state_monitor = RobotStateMonitor(self.client)
+
             return True
 
     def _setup_publisher(self, topic, message_type="std_msgs/String"):

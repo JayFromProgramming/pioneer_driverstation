@@ -17,12 +17,18 @@ from rich.live import Live
 
 import cv2
 import numpy as np
+
+from PIL import Image
+from PIL.ImageQt import ImageQt
+
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 
 import controller
 from ROSInterface import ROSInterface
 from RobotState import RobotState
+
+from io import BytesIO
 
 import logging
 
@@ -44,21 +50,40 @@ class ImageThread(QThread):
         self.running = True
         self.image = QImage("test.png")
         self.pixmap = QPixmap(self.image)
+        self.timestamp = datetime.datetime.now()
 
     def run(self):
+
         while self.running:
             if self.state.state("Img").has_changed():
-                img_msg = self.state.state("Img").value
-                # Convert imagemsg to cv2 image
-                img_array = np.frombuffer(base64.b64decode(img_msg), dtype=np.uint8).reshape((480, 640, 3))
-                img = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
-                # Convert cv2 image to QImage
+                try:
+                    base64_bytes = self.state.state("Img").value
+                    image_bytes = base64.b64decode(base64_bytes)
 
-                qImg = QImage(img_array.data, img_array.shape[1], img_array.shape[0], QImage.Format_RGB888)
-                self.image = qImg
-                # Save qImg to file for debugging
-                # qImg.save("webcam.png")
-                self.pixmap = QPixmap(self.image)
+                    # Convert to numpy array
+                    # image_array = np.frombuffer(image_bytes, dtype=np.uint8).reshape((640, 480, 3))
+                    # Decode the array
+                    # image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+                    image_file = BytesIO()
+                    # Convert to a virtual file
+                    image_file.write(image_bytes)
+
+                    # Seek to the beginning of the file
+                    image_file.seek(0)
+                    # The data is inverted so we need to flip it
+                    pil_image = Image.open(image_file)
+
+                    # pil_image = Image.open(image_file, formats=["PNG"])
+                    # The image is loaded in the wrong format, so we need to convert it
+
+                    self.image = ImageQt(pil_image)
+                    self.pixmap = QtGui.QPixmap.fromImage(self.image)
+                    self.timestamp = datetime.datetime.now()
+                    del image_bytes
+                    del image_file  # Close the file
+
+                except Exception as e:
+                    logging.error(f"Error converting image: {e}")
 
     def stop(self):
         self.running = False
@@ -96,12 +121,12 @@ class WebcamWindow(QWidget):
 
     def repaint(self) -> None:
         # Set the image to the label
+        # super().repaint()
         self.label.setPixmap(self.thread.pixmap)
-        self.setWindowTitle(f'Webcam: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-        super().repaint()
+        self.setWindowTitle(f'Webcam: {self.thread.timestamp.strftime("%Y-%m-%d %H:%M:%S")}')
 
-    # def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
-    #     self.repaint()
+    def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
+        self.repaint()
 
 
 class DriverStationUI:
@@ -132,6 +157,7 @@ class DriverStationUI:
         """Thread for displaying the webcam"""
         while self.robot.client.is_connected:
             self.webcam_window.update()
+            time.sleep(0.01)
 
     def build_up(self):
         """Build up the table"""
@@ -146,10 +172,6 @@ class DriverStationUI:
                 if self.should_redraw():
                     live.update(self.draw_table())
                 time.sleep(0.1)
-
-    def display_webcam(self):
-        """Display the webcam"""
-        logging.info("Starting webcam thread")
 
     def joystick_loop(self):
         """Loop for the joystick"""

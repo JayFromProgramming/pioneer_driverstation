@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     app = QApplication([])
 
-    address = "141.219.125.72"
+    address = "141.219.123.211"
     port = 9090
 
     # if not ssh_ros_start(address, username="ubuntu", password="ubuntu"):
@@ -56,11 +56,12 @@ if __name__ == '__main__':
     while pioneer.client.is_connecting:
         pass
     gui = DriverStatonUI.DriverStationUI(pioneer)
-    threading.Thread(target=gui.run, daemon=True).start()
+    # threading.Thread(target=gui.run, daemon=True).start()
 
     # app.exec_()
-    while pioneer.client.is_connected:
-        pass
+    gui.run()
+    # while pioneer.client.is_connected:
+    #     pass
 
     # Set qt event loop
 

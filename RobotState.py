@@ -12,9 +12,12 @@ class State:
         self.value_changed = False
         self.not_single = False  # type: bool # If the value is not a single value, but a list of values
         self.has_data = False  # type: bool # If the value has been updated at least once
+        self.reading = False  # type: bool # If the value is being read
         logging.info(f"State: {name} created")
 
     def callback(self, message):
+        if self.reading:
+            return
         self.has_data = True
         if "data" in message:
             value = message["data"]
@@ -22,6 +25,12 @@ class State:
             value = message
             self.not_single = True
         self.check_value(value)
+
+    def get_value(self):
+        self.reading = True
+        value = self.value
+        self.reading = False
+        return value
 
     def check_value(self, value):
         if value != self.value:
@@ -48,7 +57,11 @@ class RobotState:
 
     def add_watcher(self, client, name, topic, topic_type):
         state = State(name)
-        roslibpy.Topic(client, topic, topic_type).subscribe(state.callback)
+        if name == "Img":
+            compression = "png"
+        else:
+            compression = None
+        roslibpy.Topic(client, topic, topic_type, compression=compression, queue_size=10).subscribe(state.callback)
         self._states[name] = state
         logging.info(f"Added watcher for {name} on {topic} of type {topic_type}")
 
