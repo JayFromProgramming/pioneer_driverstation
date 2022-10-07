@@ -15,7 +15,7 @@ topic_to_value = {
     # "/joint_states": "joint_states",
     "/my_p3at/motors_state": "motors_state",
     "/my_p3at/cmd_vel": "cmd_vel",
-    # "/image_view/output": "Img"
+    "/camera/image/compressed": "Img"
 }
 
 acceleration = 100

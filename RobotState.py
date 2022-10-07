@@ -58,7 +58,7 @@ class RobotState:
     def add_watcher(self, client, name, topic, topic_type):
         state = State(name)
         if name == "Img":
-            compression = "png"
+            compression = None
         else:
             compression = None
         roslibpy.Topic(client, topic, topic_type, compression=compression, queue_size=10).subscribe(state.callback)
