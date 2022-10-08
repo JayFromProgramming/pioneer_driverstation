@@ -5,7 +5,8 @@ import roslibpy
 
 client = roslibpy.Ros(host='localhost', port=9090)
 
-publisher = roslibpy.Topic(client, '/camera/image/compressed', 'sensor_msgs/CompressedImage')
+publisher = roslibpy.Topic(client, '/camera/image/compressed', 'sensor_msgs/CompressedImage',
+                           queue_size=1, throttle_rate=100, latch=True, reconnect_on_close=True)
 publisher.advertise()
 
 

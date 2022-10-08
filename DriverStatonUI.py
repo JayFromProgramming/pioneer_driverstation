@@ -6,7 +6,7 @@ import sys
 import time
 import threading
 
-import rich
+import roslibpy
 from PyQt5 import QtGui
 from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal
 from rich.console import Console
@@ -33,8 +33,6 @@ from io import BytesIO
 import logging
 
 logging = logging.getLogger(__name__)
-
-import roslibpy
 
 
 def move(y, x):

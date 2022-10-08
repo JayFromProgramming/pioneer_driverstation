@@ -56,12 +56,12 @@ if __name__ == '__main__':
     while pioneer.client.is_connecting:
         pass
     gui = DriverStatonUI.DriverStationUI(pioneer)
-    # threading.Thread(target=gui.run, daemon=True).start()
+    threading.Thread(target=gui.run, daemon=True).start()
 
     # app.exec_()
     gui.run()
-    # while pioneer.client.is_connected:
-    #     pass
+    while pioneer.client.is_connected:
+        pass
 
     # Set qt event loop
 

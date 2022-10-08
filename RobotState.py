@@ -80,8 +80,7 @@ class RobotState:
         self._states = {}
 
     def add_watcher(self, client, name, topic, topic_type):
-        state = State(name)
-        roslibpy.Topic(client, topic, topic_type, queue_size=1, throttle_rate=10).subscribe(state.callback)
+        roslibpy.Topic(client, topic, topic_type, reconnect_on_close=True)
         if topic_type == "/camera/image/compressed":
             state = ImageHandler(name)
             client.subscribe(topic, topic_type, state.handle_image)
