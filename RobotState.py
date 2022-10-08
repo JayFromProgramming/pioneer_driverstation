@@ -1,10 +1,34 @@
+import base64
+from io import BytesIO
+
 import roslibpy
 import logging
+from PIL import Image
 
 logging = logging.getLogger(__name__)
 
 
+class ImageHandler:
+    """Processes /camera/image/compressed messages"""
+
+    def __init__(self, name=""):
+        self.name = name
+        self.image = None
+        self.timestamp = None
+        self.has_changed = False
+        self._last_image = None
+
+    def handle_image(self, message):
+        """Handle a message from the topic"""
+        self.timestamp = message["timestamp"]
+        base64_bytes = message['data'].encode('ascii')
+        image_bytes = base64.b64decode(base64_bytes)
+        self.image = Image.open(BytesIO(image_bytes))
+        self.has_changed = True
+
+
 class State:
+    """Processes and stores the data from each topic"""
 
     def __init__(self, name=""):
         self.name = name
@@ -57,11 +81,13 @@ class RobotState:
 
     def add_watcher(self, client, name, topic, topic_type):
         state = State(name)
-        if name == "Img":
-            compression = None
+        roslibpy.Topic(client, topic, topic_type, queue_size=1, throttle_rate=10).subscribe(state.callback)
+        if topic_type == "/camera/image/compressed":
+            state = ImageHandler(name)
+            client.subscribe(topic, topic_type, state.handle_image)
         else:
-            compression = None
-        roslibpy.Topic(client, topic, topic_type, compression=compression, queue_size=10).subscribe(state.callback)
+            state = State(name)
+            client.subscribe(topic, topic_type, state.callback)
         self._states[name] = state
         logging.info(f"Added watcher for {name} on {topic} of type {topic_type}")
 

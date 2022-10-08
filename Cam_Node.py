@@ -1,3 +1,5 @@
+import time
+
 import cv2
 import roslibpy
 
@@ -25,6 +27,7 @@ def send_image(image):
     """Send an image to the ROS topic"""
     msg = roslibpy.Message({
         'format': 'jpeg',
+        'timestamp': round(time.time(), 3),
         'data': encode_image(image)
     })
     publisher.publish(msg)

@@ -57,30 +57,11 @@ class ImageThread(QThread):
         while self.running:
             if self.state.state("Img").has_changed():
                 try:
-                    base64_bytes = self.state.state("Img").value
-                    image_bytes = base64.b64decode(base64_bytes)
-
-                    # Convert to numpy array
-                    # image_array = np.frombuffer(image_bytes, dtype=np.uint8).reshape((640, 480, 3))
-                    # Decode the array
-                    # image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-                    image_file = BytesIO()
-                    # Convert to a virtual file
-                    image_file.write(image_bytes)
-
-                    # Seek to the beginning of the file
-                    image_file.seek(0)
-                    # The data is inverted so we need to flip it
-                    pil_image = Image.open(image_file)
-
-                    # pil_image = Image.open(image_file, formats=["PNG"])
-                    # The image is loaded in the wrong format, so we need to convert it
-
-                    self.image = ImageQt(pil_image)
-                    self.pixmap = QtGui.QPixmap.fromImage(self.image)
-                    self.timestamp = datetime.datetime.now()
-                    del image_bytes
-                    del image_file  # Close the file
+                    # Img data is pre-processed into a PIL image object
+                    self.image = ImageQt(self.state.state("Img").image)
+                    self.pixmap = QPixmap(self.image)
+                    self.timestamp = self.state.state("Img").timestamp
+                    # self.changePixmap.emit(self.image)
 
                 except Exception as e:
                     logging.error(f"Error converting image: {e}")
@@ -147,11 +128,11 @@ class DriverStationUI:
         self.robot_state = robot.robot_state_monitor.state_watcher  # type: RobotState
         self.xbox_controller = controller.XboxController()
 
-        # self.webcam_window = WebcamWindow(robot)
+        self.webcam_window = WebcamWindow(robot)
         self.joy_thread = threading.Thread(target=self.joystick_loop, daemon=True)
         self.joy_thread.start()
-        # self.webcam_threads = threading.Thread(target=self.webcam_thread, daemon=True)
-        # self.webcam_threads.start()
+        self.webcam_threads = threading.Thread(target=self.webcam_thread, daemon=True)
+        self.webcam_threads.start()
 
     def webcam_thread(self):
         """Thread for displaying the webcam"""
