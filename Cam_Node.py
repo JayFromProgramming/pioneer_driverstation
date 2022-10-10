@@ -1,13 +1,10 @@
+#!/usr/bin/env python
+
 import time
 
 import cv2
-import roslibpy
-
-client = roslibpy.Ros(host='localhost', port=9090)
-
-publisher = roslibpy.Topic(client, '/camera/image/compressed', 'sensor_msgs/CompressedImage',
-                           queue_size=1, throttle_rate=100, latch=True, reconnect_on_close=True)
-publisher.advertise()
+import rospy
+from std_msgs.msg import String
 
 
 def get_image():
@@ -24,21 +21,25 @@ def encode_image(image):
     return jpeg.tobytes()
 
 
-def send_image(image):
+def send_image(image, pub):
     """Send an image to the ROS topic"""
-    msg = roslibpy.Message({
-        'format': 'jpeg',
-        'timestamp': round(time.time(), 3),
-        'data': encode_image(image)
-    })
-    publisher.publish(msg)
+    msg = encode_image(image)
+    pub.publish(msg)
 
 
-def camera_loop():
-    """Continuously fetch and send images"""
-    image = get_image()
-    send_image(image)
+def cam_node():
+    """Main function"""
+    pub = rospy.Publisher('chatter', String, queue_size=1)
+    rospy.init_node('cam_node', anonymous=True)
+    rate = rospy.Rate(10)  # 10hz
+    while not rospy.is_shutdown():
+        image = get_image()
+        send_image(image, pub)
+        rate.sleep()
 
 
-client.on_ready(camera_loop)
-client.run_forever()
+if __name__ == '__main__':
+    try:
+        cam_node()
+    except rospy.ROSInterruptException:
+        pass

@@ -26,7 +26,7 @@ class RobotStateMonitor:
 
     def __init__(self, client):
         self.client = client
-        self.state_watcher = RobotState()
+        self.state_watcher = RobotState(client)
         self._load_topics()
         self.setup_watchers()
         self.cached_topics = None  # type: dict or None

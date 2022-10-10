@@ -76,7 +76,8 @@ class State:
 
 class RobotState:
 
-    def __init__(self):
+    def __init__(self, client):
+        self.client = client
         self._states = {}
 
     def add_watcher(self, client, name, topic, topic_type):
@@ -89,6 +90,11 @@ class RobotState:
             client.subscribe(topic, topic_type, state.callback)
         self._states[name] = state
         logging.info(f"Added watcher for {name} on {topic} of type {topic_type}")
+
+    def execute_service(self, name, *args):
+        service = roslibpy.Service(self.client, name, 'std_srvs/Empty')
+        request = roslibpy.ServiceRequest()
+        service.call(request, *args)
 
     def state(self, name):
         return self._states[name]
