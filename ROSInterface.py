@@ -26,7 +26,7 @@ class RobotStateMonitor:
 
     def __init__(self, client):
         self.client = client
-        self.state_watcher = RobotState(client)
+        self.state_watcher = RobotState()
         self._load_topics()
         self.setup_watchers()
         self.cached_topics = None  # type: dict or None
@@ -94,3 +94,8 @@ class ROSInterface:
         logging.info(f"Driving forward: {forward} turn: {turn}")
         message = roslibpy.Message({"linear": {"x": forward}, "angular": {"z": turn}})
         self.key_board_publisher.publish(message)
+
+    def execute_service(self, name, *args):
+        service = roslibpy.Service(self.client, name, 'std_srvs/Empty')
+        request = roslibpy.ServiceRequest()
+        service.call(request, *args)

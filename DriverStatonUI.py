@@ -127,7 +127,7 @@ class DriverStationUI:
         self.xbox_controller = controller.XboxController()
 
         self.webcam_window = WebcamWindow(robot)
-        self.joy_thread = threading.Thread(target=self.joystick_loop, daemon=True)
+        self.joy_thread = threading.Thread(target=self.controller_read_loop, daemon=True)
         self.joy_thread.start()
         self.webcam_threads = threading.Thread(target=self.webcam_thread, daemon=True)
         self.webcam_threads.start()
@@ -152,7 +152,7 @@ class DriverStationUI:
                     live.update(self.draw_table())
                 time.sleep(0.1)
 
-    def joystick_loop(self):
+    def controller_read_loop(self):
         """Loop for the joystick"""
         while self.robot.client.is_connected:
             # Apply deadbands to the joystick
@@ -163,9 +163,13 @@ class DriverStationUI:
             if abs(turn) < 0.1:
                 turn = 0
 
-            self.robot.key_board_publisher.publish(
-                roslibpy.Message({"linear": {"x": forward * 1},
-                                  "angular": {"z": turn * -1}}))
+            self.robot.drive(forward, turn)
+
+            if self.xbox_controller.A:
+                self.robot.execute_service("enable_motors")
+            if self.xbox_controller.B:
+                self.robot.execute_service("disable_motors")
+
             time.sleep(0.2)
 
     def should_redraw(self):
