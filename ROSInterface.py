@@ -78,6 +78,7 @@ class ROSInterface:
             self.publisher = self._setup_publisher("/driver_station")
             self.key_board_publisher = self._setup_publisher("/my_p3at/cmd_vel", message_type="geometry_msgs/Twist")
             self.robot_state_monitor = RobotStateMonitor(self.client)
+            print(self.get_services())
 
             return True
 
@@ -91,9 +92,11 @@ class ROSInterface:
         return self.robot_state_monitor
 
     def drive(self, forward=0.0, turn=0.0):
-        logging.info(f"Driving forward: {forward} turn: {turn}")
         message = roslibpy.Message({"linear": {"x": forward}, "angular": {"z": turn}})
         self.key_board_publisher.publish(message)
+
+    def get_services(self):
+        return self.client.get_services()
 
     def execute_service(self, name, *args):
         service = roslibpy.Service(self.client, name, 'std_srvs/Empty')

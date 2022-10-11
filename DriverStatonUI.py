@@ -126,11 +126,11 @@ class DriverStationUI:
         self.robot_state = robot.robot_state_monitor.state_watcher  # type: RobotState
         self.xbox_controller = controller.XboxController()
 
-        self.webcam_window = WebcamWindow(robot)
+        # self.webcam_window = WebcamWindow(robot)
         self.joy_thread = threading.Thread(target=self.controller_read_loop, daemon=True)
         self.joy_thread.start()
-        self.webcam_threads = threading.Thread(target=self.webcam_thread, daemon=True)
-        self.webcam_threads.start()
+        # self.webcam_threads = threading.Thread(target=self.webcam_thread, daemon=True)
+        # self.webcam_threads.start()
 
     def webcam_thread(self):
         """Thread for displaying the webcam"""
@@ -166,9 +166,9 @@ class DriverStationUI:
             self.robot.drive(forward, turn)
 
             if self.xbox_controller.A:
-                self.robot.execute_service("enable_motors")
+                self.robot.execute_service("my_p3at/enable_motors")
             if self.xbox_controller.B:
-                self.robot.execute_service("disable_motors")
+                self.robot.execute_service("my_p3at/disable_motors")
 
             time.sleep(0.2)
 

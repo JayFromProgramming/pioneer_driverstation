@@ -80,13 +80,13 @@ class RobotState:
         self._states = {}
 
     def add_watcher(self, client, name, topic, topic_type):
-        roslibpy.Topic(client, topic, topic_type, reconnect_on_close=True)
+        topic = roslibpy.Topic(client, topic, topic_type, reconnect_on_close=True)
         if topic_type == "/camera/image/compressed":
             state = ImageHandler(name)
-            client.subscribe(topic, topic_type, state.handle_image)
+            topic.subscribe(state.handle_image)
         else:
             state = State(name)
-            client.subscribe(topic, topic_type, state.callback)
+            topic.subscribe(state.callback)
         self._states[name] = state
         logging.info(f"Added watcher for {name} on {topic} of type {topic_type}")
 

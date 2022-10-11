@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     app = QApplication([])
 
-    address = "141.219.123.241"
+    address = "141.219.122.199"
     port = 9090
 
     # if not ssh_ros_start(address, username="ubuntu", password="ubuntu"):
