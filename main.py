@@ -53,8 +53,8 @@ if __name__ == '__main__':
     pioneer = ROSInterface.ROSInterface(address, port)
     pioneer.connect()
     logging.info(f"Connected to ROS master at {address}:{port}")
-    while pioneer.client.is_connecting:
-        pass
+    # while pioneer.client.is_connecting:
+    #     pass
     gui = DriverStatonUI.DriverStationUI(pioneer)
     # threading.Thread(target=gui.run, daemon=True).start()
 

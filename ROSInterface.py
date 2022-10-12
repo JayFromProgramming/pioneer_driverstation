@@ -15,6 +15,8 @@ topic_to_value = {
     # "/joint_states": "joint_states",
     "/my_p3at/motors_state": "motors_state",
     "/my_p3at/cmd_vel": "cmd_vel",
+    # "my_p3at/sonar": "sonar",
+    # "/my_p3at/sonar_pointcloud2": "sonar_pointcloud2",
     "/camera/image/compressed": "Img"
 }
 
@@ -79,7 +81,6 @@ class ROSInterface:
             self.key_board_publisher = self._setup_publisher("/my_p3at/cmd_vel", message_type="geometry_msgs/Twist")
             self.robot_state_monitor = RobotStateMonitor(self.client)
             print(self.get_services())
-
             return True
 
     def _setup_publisher(self, topic, message_type="std_msgs/String"):

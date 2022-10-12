@@ -157,10 +157,10 @@ class DriverStationUI:
         while self.robot.client.is_connected:
             # Apply deadbands to the joystick
             forward = self.xbox_controller.LeftJoystickY
-            if abs(forward) < 0.1:
+            if abs(forward) < 0.15:
                 forward = 0
-            turn = self.xbox_controller.LeftJoystickX
-            if abs(turn) < 0.1:
+            turn = self.xbox_controller.LeftJoystickX * -1
+            if abs(turn) < 0.15:
                 turn = 0
 
             self.robot.drive(forward, turn)
