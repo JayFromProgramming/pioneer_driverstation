@@ -29,11 +29,16 @@ class RobotStateMonitor:
     def __init__(self, client):
         self.client = client
         self.state_watcher = RobotState()
+
+        if self.client is None:
+            return
+
         self._load_topics()
         self.setup_watchers()
         self.cached_topics = None  # type: dict or None
 
     def _load_topics(self):
+
         logging.info("RobotStateMonitor: Loading topics")
         topic_dict = {}
         for topic in self.client.get_topics():
@@ -65,7 +70,7 @@ class ROSInterface:
         self.address = address
         self.port = int(port)
         self.controller = controller
-        self.robot_state_monitor = None  # type: RobotStateMonitor or None
+        self.robot_state_monitor = RobotStateMonitor(self.client)
         self.publisher = None  # type: roslibpy.Topic or None
         self.key_board_publisher = None  # type: roslibpy.Topic or None
 

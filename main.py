@@ -58,8 +58,8 @@ if __name__ == '__main__':
     gui = DriverStatonUI.DriverStationUI(pioneer)
     # threading.Thread(target=gui.run, daemon=True).start()
 
-    # app.exec_()
-    gui.run()
+    app.exec_()
+    # gui.run()
     while pioneer.client.is_connected:
         pass
 
