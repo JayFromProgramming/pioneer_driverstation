@@ -51,7 +51,7 @@ if __name__ == '__main__':
     #     exit(1)
 
     pioneer = ROSInterface.ROSInterface(address, port)
-    pioneer.connect()
+    # pioneer.connect()
     logging.info(f"Connected to ROS master at {address}:{port}")
     # while pioneer.client.is_connecting:
     #     pass

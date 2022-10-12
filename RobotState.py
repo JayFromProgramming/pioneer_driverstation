@@ -91,7 +91,9 @@ class RobotState:
         logging.info(f"Added watcher for {name} on {topic} of type {topic_type}")
 
     def state(self, name):
-        return self._states[name]
+        if name in self._states:
+            return self._states[name]
+        return None
 
     def states(self):
         return self._states.values()
