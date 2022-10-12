@@ -20,6 +20,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QImage
 
 import controller
 from QT5_Classes.CannonUI import CannonUI
+from QT5_Classes.ConnectionUI import ConnectionUI
 from QT5_Classes.PioneerUI import PioneerUI
 from QT5_Classes.WebcamUI import WebcamWindow
 from ROSInterface import ROSInterface
@@ -40,23 +41,29 @@ class DriverStationUI:
         self.last_redraw = 0  # type: int
 
         self.robot_state = robot.robot_state_monitor.state_watcher  # type: RobotState
-        # self.xbox_controller = controller.XboxController()
+        try:
+            self.xbox_controller = controller.XboxController()
+        except Exception as e:
+            logging.error(f"Error initializing controller: {e}")
+            self.xbox_controller = None
 
         self.window = QMainWindow()
         self.window.setWindowTitle("Driver Station")
-        self.window.resize(1080, 720)
+        self.window.resize(1280, 720)
 
-        # self.layout.addWidget(WebcamWindow(self.robot))
         self.pioneer_ui = PioneerUI(self.robot, parent=self.window)
         self.cannon_ui = CannonUI(self.robot, parent=self.window)
+        self.webcam = WebcamWindow(self.robot, self.window)
+        self.conn_info = ConnectionUI(self.robot, self.window)
 
         # Move the pioneer UI to the bottom left
         self.pioneer_ui.move(0, 480)
-
         # Move the cannon UI to the top left
         self.cannon_ui.move(0, 0)
-
-
+        # Move the webcam to the top right
+        self.webcam.move(640, 0)
+        # Move the connection info to the bottom right
+        self.conn_info.move(640, 480)
         self.window.show()
 
     # def run(self):

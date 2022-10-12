@@ -42,7 +42,7 @@ def ssh_ros_start(address="localhost", username="ubuntu", password="ubuntu"):
 if __name__ == '__main__':
 
     app = QApplication([])
-
+    app.setStyle('Windows')
     address = "141.219.122.199"
     port = 9090
 
@@ -60,8 +60,8 @@ if __name__ == '__main__':
 
     app.exec_()
     # gui.run()
-    while pioneer.client.is_connected:
-        pass
-
+    # while pioneer.client.is_connected:
+    #     pass
+    pioneer.client.terminate()
     # Set qt event loop
 

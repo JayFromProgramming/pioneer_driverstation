@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMainWindow
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMainWindow, QGridLayout
 import logging
 
 logging = logging.getLogger(__name__)
@@ -11,26 +11,23 @@ class CmdVelWidget(QWidget):
     def __init__(self, size=100, expected_bounds=(-1, 1), parent=None):
         super().__init__()
         super().setParent(parent)
-        # super().setFixedSize(size + 15, size + 15)
+        super().setFixedSize(size + 15, size + 15)
 
         self.size = size
         self.expected_bounds = expected_bounds
 
         # Set up the UI name text
-        self.name = QLabel("Pioneer Vel Command", parent=self)
+        self.name = QLabel("Velocity CMD", parent=self)
         self.name.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
         # Position the name text at the top of the box and center it
-        self.name.move(0, 0)
         # Set text color to white
-        self.name.setStyleSheet("color: green")
+        self.name.setStyleSheet("color: green; font-size: 14px; font-weight: bold; alignment: center")
 
         # Set up the value text
-        self.value = QLabel("0, 0", parent=self)
-        self.value.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignCenter)
+        self.value = QLabel("0, 0")
         # Position the value text at the centered bottom of the widget
-        self.value.move(0, size)
         # Set text color to white
-        self.value.setStyleSheet("color: green")
+        self.value.setStyleSheet("color: green; font-size: 14px; font-weight: bold; alignment: center")
 
         # Set up the background box
         self.box = QWidget(self)
@@ -38,15 +35,15 @@ class CmdVelWidget(QWidget):
         self.box.setStyleSheet("background-color: black")
 
         # Set up the dot
-        self.dot = QLabel(self.box)
+        self.dot = QLabel("•", parent=self.box)
         self.dot.setFixedSize(5, 5)
-        self.dot.setStyleSheet("background-color: red")
+        self.dot.setStyleSheet("background-color: transparent; color: green")
 
         # Set up the layout
-        self.layout = QVBoxLayout(self)
-        self.layout.addWidget(self.box)
-        self.layout.addWidget(self.name)
-        self.layout.addWidget(self.value)
+        self.layout = QGridLayout(self)
+        self.layout.addWidget(self.name, 0, 0, 1, 2)
+        self.layout.addWidget(self.box, 1, 0, 1, 2)
+        self.layout.addWidget(self.value, 2, 0, 1, 2)
 
         super().setLayout(self.layout)
 
@@ -90,8 +87,8 @@ class PioneerUI(QWidget):
 
         # Instantiate the UI graphics
         self.vel_graph = CmdVelWidget(100, (-1, 1))
-        self.motor_state = QLabel()
-        self.battery_voltage = QLabel()
+        self.motor_state = QLabel("Motor State: ")
+        self.battery_voltage = QLabel("Battery Voltage: ")
 
         # Set the layout of the UI
         self.layout = QVBoxLayout()
@@ -116,3 +113,25 @@ class PioneerUI(QWidget):
         except Exception as e:
             logging.error(f"Error updating velocity graph: {e}")
             self.vel_graph.set(0, 0)
+
+        # Update the motor state with the current motor state
+        try:
+            motor_state = self.robot.robot_state_monitor.state_watcher.state("motor_state")
+            if motor_state is not None:
+                self.motor_state.setText(f"Motor State: {motor_state.value}")
+            else:
+                self.motor_state.setText("Motor State: Unknown")
+        except Exception as e:
+            logging.error(f"Error updating motor state: {e}")
+            self.motor_state.setText("Motor State: Error")
+
+        # Update the battery voltage with the current battery voltage
+        try:
+            battery_voltage = self.robot.robot_state_monitor.state_watcher.state("battery_voltage")
+            if battery_voltage is not None:
+                self.battery_voltage.setText(f"Battery Voltage: {battery_voltage.value}")
+            else:
+                self.battery_voltage.setText("Battery Voltage: Unknown")
+        except Exception as e:
+            logging.error(f"Error updating battery voltage: {e}")
+            self.battery_voltage.setText("Battery Voltage: Error")
