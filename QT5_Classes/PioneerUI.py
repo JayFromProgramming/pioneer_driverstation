@@ -24,19 +24,19 @@ class CmdVelWidget(QWidget):
         self.name.setStyleSheet("color: green; font-size: 14px; font-weight: bold; alignment: center")
 
         # Set up the value text
-        self.value = QLabel("0, 0")
+        self.value = QLabel("0, 0", parent=self)
         # Position the value text at the centered bottom of the widget
         # Set text color to white
         self.value.setStyleSheet("color: green; font-size: 14px; font-weight: bold; alignment: center")
 
         # Set up the background box
-        self.box = QWidget(self)
+        self.box = QWidget(parent=self)
         self.box.setFixedSize(size, size)
         self.box.setStyleSheet("background-color: black")
 
         # Set up the dot
         self.dot = QLabel("•", parent=self.box)
-        self.dot.setFixedSize(5, 5)
+        # self.dot.setFixedSize(5, 5)
         self.dot.setStyleSheet("background-color: transparent; color: green")
 
         # Set up the layout
@@ -53,17 +53,19 @@ class CmdVelWidget(QWidget):
     def set(self, x, y):
         self.x = x
         self.y = y
+
         self.repaint()
 
     def paintEvent(self, event):
         super().paintEvent(event)
 
-        # Scale the values to the size of the box
-        x = self.x * self.size
-        y = self.y * self.size
+        # Make zero the center of the box not the top left
+        x = (self.x * self.size / 2) + self.size / 2
+        y = (self.y * self.size / 2) + self.size / 2
 
         # Move the dot to where it should be
-        self.dot.move(x, y)
+        point = QtCore.QPoint(int(x), int(y))
+        self.dot.move(point)
 
         # Update the value text
         self.value.setText(f"{self.x}, {self.y}")
@@ -91,10 +93,10 @@ class PioneerUI(QWidget):
         self.battery_voltage = QLabel("Battery Voltage: ")
 
         # Set the layout of the UI
-        self.layout = QVBoxLayout()
-        self.layout.addWidget(self.vel_graph)
-        self.layout.addWidget(self.motor_state)
-        self.layout.addWidget(self.battery_voltage)
+        self.layout = QGridLayout(self)
+        self.layout.addWidget(self.vel_graph, 0, 0, 1, 2)
+        self.layout.addWidget(self.motor_state, 1, 0, 1, 2)
+        self.layout.addWidget(self.battery_voltage, 2, 0, 1, 2)
         self.setLayout(self.layout)
 
         # Set the update timer

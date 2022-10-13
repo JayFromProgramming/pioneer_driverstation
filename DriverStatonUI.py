@@ -66,6 +66,8 @@ class DriverStationUI:
         self.conn_info.move(640, 480)
         self.window.show()
 
+        threading.Thread(target=self.controller_read_loop).start()
+
     # def run(self):
     #     """Draw the HUD until the program exits"""
     #
@@ -94,34 +96,3 @@ class DriverStationUI:
                 self.robot.execute_service("my_p3at/disable_motors")
 
             time.sleep(0.2)
-
-    # def should_redraw(self):
-    #     """Check if the table has changed"""
-    #     for state in self.robot_state.states():
-    #         if state.has_changed():
-    #             return True
-
-    # def draw_table(self):
-    #     """Draw the table"""
-    #     table = Table(show_header=True, header_style="bold magenta", show_lines=True)
-    #     table.add_column("Topic", style="dim", width=24)
-    #     table.add_column("Value", justify="center")
-    #     for state in self.robot_state.states():
-    #         # Exclude the image topic
-    #         if state.name == "Img":
-    #             continue
-    #
-    #         if not state.has_data:
-    #             continue
-    #         if state.not_single:  # If the value is not a single value, then make another table for it
-    #             table.add_row(str(state), self.draw_sub_table(state.value))
-    #         else:
-    #             table.add_row(str(state), str(state.value))
-    #     return table
-    #
-    # def draw_sub_table(self, values):
-    #     """Draw a sub table"""
-    #     table = Table(show_header=False, header_style="bold magenta", show_lines=True)
-    #     for key, value in values.items():
-    #         table.add_row(str(key), str(value))
-    #     return table

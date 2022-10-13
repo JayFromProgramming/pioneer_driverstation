@@ -1,3 +1,5 @@
+import time
+
 import roslibpy
 import threading
 import logging
@@ -6,7 +8,7 @@ from RobotState import RobotState
 
 logging = logging.getLogger(__name__)
 
-topic_to_value = {
+topic_to_name = {
     # "/usb_cam/camera_info": "camera_info",
     # '/my_p3at/pose': 'pose',
     # '/my_p3at/parameter_updates': 'param',
@@ -17,11 +19,12 @@ topic_to_value = {
     "/my_p3at/cmd_vel": "cmd_vel",
     # "my_p3at/sonar": "sonar",
     # "/my_p3at/sonar_pointcloud2": "sonar_pointcloud2",
-    "/camera/image/compressed": "Img"
+    "/camera/image/compressed": "Img",
+    "/cannon/angle": "cannon_angle",
+    "/cannon/tanks/0": "cannon_tank_0",
+    "/cannon/tanks/1": "cannon_tank_1",
+    "/cannon/pneumatics": "pnemumatics"
 }
-
-acceleration = 100
-turn_speed = 0.5
 
 
 class RobotStateMonitor:
@@ -52,7 +55,7 @@ class RobotStateMonitor:
         logging.info("RobotStateMonitor: Setting up watchers")
         if self.cached_topics is None:
             self._load_topics()
-        for val, name in topic_to_value.items():
+        for val, name in topic_to_name.items():
             if val in self.cached_topics:
                 self.setup_listener(name, val)
         logging.info("RobotStateMonitor: Set up watchers")
@@ -61,6 +64,15 @@ class RobotStateMonitor:
         message_type = self.cached_topics[topic]["type"]
         logging.info(f"Setting up listener for {topic} of type {message_type}")
         self.state_watcher.add_watcher(self.client, name, topic, message_type)
+
+    def get_state(self, name):
+        return self.state_watcher.state(name)
+
+    def get_states(self):
+        return self.state_watcher.states()
+
+    def is_state_available(self, name):
+        return name in self.state_watcher.states()
 
 
 class ROSInterface:
@@ -73,9 +85,24 @@ class ROSInterface:
         self.robot_state_monitor = RobotStateMonitor(self.client)
         self.publisher = None  # type: roslibpy.Topic or None
         self.key_board_publisher = None  # type: roslibpy.Topic or None
+        self.background_thread = None  # type: threading.Thread or None
 
     def connect(self):
+        logging.info("Connecting to ROS bridge")
+        self.background_thread = threading.Thread(target=self._connect, daemon=True)
+        self.background_thread.start()
+
+    def terminate(self):
+        logging.info("Terminating ROSInterface")
+        self.client.terminate()
+        self.background_thread.join()
+
+    def _connect(self):
         self.client = roslibpy.Ros(host=self.address, port=self.port)
+        while not self.client.is_connected:
+            logging.info("Connection to ROS bridge failed, retrying...")
+            self.client.connect()
+            time.sleep(5)
         try:
             self.client.run()
         except Exception as e:

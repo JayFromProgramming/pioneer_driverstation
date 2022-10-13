@@ -1,5 +1,10 @@
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QGridLayout
+from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QGridLayout, QPushButton, QLineEdit
+
+import logging
+
+logging = logging.getLogger(__name__)
 
 
 class AirTankElement(QWidget):
@@ -9,11 +14,16 @@ class AirTankElement(QWidget):
     """
 
     def __init__(self, tank_name, tank_max_pressure, tank_min_pressure, tank_pressure, tank_pressure_unit,
-                 parent=None):
+                 parent=None, robot=None, tank_topic=None):
         super().__init__()
-        super().setFixedSize(520, 100)
+        super().setFixedSize(530, 140)
         super().setParent(parent)
+
+        self.robot = robot
+        self.state_watcher = self.robot.robot_state_monitor  # type: RobotStateMonitor
+
         self.tank_name = tank_name
+        self.topic = tank_topic
         self.tank_max_pressure = tank_max_pressure
         self.tank_min_pressure = tank_min_pressure
         self.tank_pressure = tank_pressure
@@ -21,11 +31,12 @@ class AirTankElement(QWidget):
         self.tank_pressure_unit = tank_pressure_unit
 
         self.fault = True
+        self.status = "Initializing"
 
         # Instantiate the UI graphics
-        self.tank_box = QLabel()
+        self.tank_box = QLabel(self)
         self.tank_box.setFixedSize(500, 60)
-        self.tank_box.setStyleSheet("background-color: white; border: 1px solid black")
+        self.tank_box.setStyleSheet("background-color: white; border: 2px solid black")
 
         self.tank_pressure_bar = QLabel(self.tank_box)
         self.tank_pressure_bar.setFixedSize(500, 60)
@@ -43,29 +54,97 @@ class AirTankElement(QWidget):
                                      int(self.tank_box.height() / 2 - self.tank_pressure_text.height() / 2))
         # self.tank_pressure_text.setAlignment(QtCore.Qt.AlignCenter)
 
+        # Setup tank buttons
+        self.auto_button = QPushButton("AUTO", parent=self)
+        self.auto_button.setFixedSize(50, 30)
+        self.auto_button.setCheckable(True)  # Make the button toggleable
+        self.auto_button.clicked.connect(self.on_auto_button_clicked)
+
+        self.fill_button = QPushButton("FILL", parent=self)
+        self.fill_button.setFixedSize(50, 30)
+        self.fill_button.setCheckable(True)  # Make the button toggleable
+        self.fill_button.clicked.connect(self.on_fill_button_clicked)
+
+        self.vent_button = QPushButton("VENT", parent=self)
+        self.vent_button.setFixedSize(60, 30)
+        self.vent_button.setCheckable(True)  # Make the button toggleable
+        self.vent_button.clicked.connect(self.on_vent_button_clicked)
+
+        self.pressure_set_input = QLineEdit(parent=self)
+        self.pressure_set_input.setFixedSize(50, 30)
+        self.pressure_set_input.setText(str(self.tank_pressure))
+        self.pressure_set_input.returnPressed.connect(self.on_pressure_set)
+
+        self.pressure_set_button = QPushButton("SET", parent=self)
+        self.pressure_set_button.setFixedSize(50, 30)
+        self.pressure_set_button.clicked.connect(self.on_pressure_set)
+
         # Instantiate the UI text
-        self.tank_name_label = QLabel(self.tank_name, parent=self)
+        self.tank_name_label = QLabel(f"{self.tank_name}: {self.status}", parent=self)
         # self.tank_name_label.setAlignment(
-        self.tank_name_label.setStyleSheet("color: black")
+        self.tank_name_label.setStyleSheet("color: black; background-color: transparent; border: 0px;"
+                                           "font-size: 20px; font-weight: bold")
         # Position the name text at the top and the left of the graphic
-        self.tank_name_label.move(0, 60)
 
         # Set up the layout
-        self.layout = QVBoxLayout(self)
-        self.layout.addWidget(self.tank_box)
-        self.layout.addWidget(self.tank_name_label, alignment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
-        super().setLayout(self.layout)
+        self.tank_name_label.move(0, 0)
+        self.tank_box.move(10, 25)
+        # self.tank_pressure_bar.move(10, 10)
+        self.pressure_set_input.move(10, 85)
+        self.pressure_set_button.move(65, 85)
+        # The buttons are placed on the bottom right side of the tank graphic
+        self.auto_button.move(320, 85)
+        self.fill_button.move(380, 85)
+        self.vent_button.move(440, 85)
 
-    def set(self, tank_pressure):
-        self.fault = False
-        self.tank_pressure = tank_pressure
+        self.set_style_sheets()
+
+        # Start the timer
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.update_loop)
+        self.timer.start(150)
+
+    def set_style_sheets(self):
+
+        self.auto_button.setStyleSheet("background-color: grey; font-size: 15px;")
+        self.fill_button.setStyleSheet("background-color: grey; font-size: 15px;")
+        self.vent_button.setStyleSheet("background-color: grey; font-size: 15px;")
+        self.pressure_set_button.setStyleSheet("background-color: grey; font-size: 15px;")
+
+    def set(self, state):
+
+        value = state.value
+
+        self.fault = value["fault"]
+        self.tank_pressure = value["pressure"]
         self.pressure_percent = (self.tank_pressure - self.tank_min_pressure) / (self.tank_max_pressure - self.tank_min_pressure)
         self.repaint()
+
+    def update_loop(self):
+        try:
+            if self.robot is not None:
+                if self.robot.client.is_connected:
+                    if self.state_watcher.is_state_available(self.topic):
+                        state = self.state_watcher.get_state(self.topic)
+                        self.set(state)
+                    else:
+                        self.fault = True
+                        self.status = "No Topic"
+                else:
+                    self.fault = True
+                    self.status = "No ROS"
+            else:
+                self.fault = True
+                self.status = "No Robot"
+        except Exception as e:
+            logging.error(f"{e}")
 
     def paintEvent(self, event):
         super().paintEvent(event)
 
         # If the tank is in a fault state, then set the pressure bar to red
+
+        self.tank_name_label.setText(f"{self.tank_name}: {self.status}")
 
         if self.fault:
             self.tank_pressure_bar.setStyleSheet("background-color: red")
@@ -74,23 +153,46 @@ class AirTankElement(QWidget):
             self.tank_pressure_bar.setStyleSheet("background-color: green")
             self.tank_pressure_bar.setFixedSize(500 * self.pressure_percent, 60)
 
+    @pyqtSlot()
+    def on_auto_button_clicked(self):
+        # Deselect the other buttons as they are mutually exclusive
+        self.fill_button.setChecked(False)
+        self.vent_button.setChecked(False)
+
+    @pyqtSlot()
+    def on_fill_button_clicked(self):
+        # Deselect the other buttons as they are mutually exclusive
+        self.auto_button.setChecked(False)
+        self.vent_button.setChecked(False)
+
+    @pyqtSlot()
+    def on_vent_button_clicked(self):
+        # Deselect the other buttons as they are mutually exclusive
+        self.auto_button.setChecked(False)
+        self.fill_button.setChecked(False)
+
+    @pyqtSlot()
+    def on_pressure_set(self):
+        pass
+
 
 class CannonUI(QWidget):
 
     def __init__(self, robot, parent=None):
         super().__init__()
         super().setParent(parent)
-        super().setFixedSize(520, 200)
+        super().setFixedSize(700, 400)
         self.parent = parent
         self.robot = robot
 
-        self.tank1 = AirTankElement("Tank 1", 100, 0, 0, "PSI")
-        self.tank2 = AirTankElement("Tank 2", 100, 0, 0, "PSI")
+        self.tank1 = AirTankElement("Tank 1", 100, 0, 0, "PSI", parent=self, robot=self.robot,
+                                    tank_topic="cannon_tank_0")
+        self.tank2 = AirTankElement("Tank 2", 100, 0, 0, "PSI", parent=self, robot=self.robot,
+                                    tank_topic="cannon_tank_1")
 
-        # Set up the layout
-        self.layout = QVBoxLayout(self)
-        self.layout.addWidget(self.tank1)
-        self.layout.addWidget(self.tank2)
+        self.tank1.move(35, 0)
+
+        self.tank2.move(35, 130)
 
     def set(self, tank1_pressure, tank2_pressure):
         self.tank1.set(tank1_pressure)
@@ -98,4 +200,3 @@ class CannonUI(QWidget):
 
     def paintEvent(self, event):
         super().paintEvent(event)
-

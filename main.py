@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     app = QApplication([])
     app.setStyle('Windows')
-    address = "141.219.122.199"
+    address = "141.219.126.221"
     port = 9090
 
     # if not ssh_ros_start(address, username="ubuntu", password="ubuntu"):
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     #     exit(1)
 
     pioneer = ROSInterface.ROSInterface(address, port)
-    # pioneer.connect()
+    pioneer.connect()
     logging.info(f"Connected to ROS master at {address}:{port}")
     # while pioneer.client.is_connecting:
     #     pass
@@ -62,6 +62,6 @@ if __name__ == '__main__':
     # gui.run()
     # while pioneer.client.is_connected:
     #     pass
-    pioneer.client.terminate()
+    pioneer.terminate()
     # Set qt event loop
 
