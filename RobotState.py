@@ -32,7 +32,7 @@ class State:
 
     def __init__(self, name=""):
         self.name = name
-        self.value = "No update"
+        self.value = None
         self.value_changed = False
         self.not_single = False  # type: bool # If the value is not a single value, but a list of values
         self.has_data = False  # type: bool # If the value has been updated at least once

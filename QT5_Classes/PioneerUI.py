@@ -51,24 +51,27 @@ class CmdVelWidget(QWidget):
         self.y = 0  # Center the dot
 
     def set(self, x, y):
-        self.x = x
-        self.y = y
-
-        self.repaint()
+        # print(f"Setting to {x}, {y}")
+        self.x = int(x)
+        self.y = int(y)
+        # self.repaint()
 
     def paintEvent(self, event):
-        super().paintEvent(event)
+        try:
+            super().paintEvent(event)
 
-        # Make zero the center of the box not the top left
-        x = (self.x * self.size / 2) + self.size / 2
-        y = (self.y * self.size / 2) + self.size / 2
+            # Make zero the center of the box not the top left
+            x = (self.x * self.size / 2) + self.size / 2
+            y = (self.y * self.size / 2) + self.size / 2
 
-        # Move the dot to where it should be
-        point = QtCore.QPoint(int(x), int(y))
-        self.dot.move(point)
+            # Move the dot to where it should be
+            point = QtCore.QPoint(int(x), int(y))
+            self.dot.move(point)
 
-        # Update the value text
-        self.value.setText(f"{self.x}, {self.y}")
+            # Update the value text
+            self.value.setText(f"{self.x}, {self.y}")
+        except Exception as e:
+            logging.error(f"Error in paintEvent: {e}")
 
 
 class PioneerUI(QWidget):
@@ -109,7 +112,11 @@ class PioneerUI(QWidget):
         try:
             cmd_vel = self.robot.robot_state_monitor.state_watcher.state("cmd_vel")
             if cmd_vel is not None:
-                self.vel_graph.set(cmd_vel.value[0], cmd_vel.value[1])
+                if cmd_vel.value is not None:
+                    self.vel_graph.set(cmd_vel.value[0], cmd_vel.value[1])
+                # print(cmd_vel.value)
+                else:
+                    self.vel_graph.set(0, 0)
             else:
                 self.vel_graph.set(0, 0)
         except Exception as e:

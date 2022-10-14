@@ -1,10 +1,100 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, QLine
+from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QGridLayout, QPushButton, QLineEdit
 
 import logging
+import random
 
 logging = logging.getLogger(__name__)
+
+
+class SolenoidGraphic(QWidget):
+
+    def __init__(self, parent=None, robot=None, topic_name="", solenoid_name="", orientation="horizontal"):
+        super().__init__()
+        super().setParent(parent)
+        super().setFixedSize(75, 50)
+
+        self.topic_name = topic_name
+        self.solenoid_name = solenoid_name
+        self.robot = robot
+        self.state_watcher = robot.robot_state_monitor
+
+        # Set up the 3 lines that will be used to graphically represent the solenoid
+        painter = QPainter(self)
+        painter.setPen(QtCore.Qt.black)
+
+        # The first line is the A side of the solenoid
+        self.line_a = painter.drawLine(0, 25, 25, 0)
+        # The second line is the B side of the solenoid
+        self.line_b = painter.drawLine(75, 25, 100, 25)
+        # The third line is the line that either connects the A and B sides or is oriented vertically
+        # depending on if the solenoid is open or closed
+        self.action_line = painter.drawLine(25, 0, 75, 25)
+
+        rand = random.randint(0, 2)
+        if rand == 0:
+            self.state = "closed"
+        elif rand == 1:
+            self.state = "open"
+        else:
+            self.state = "fault"
+
+        # Start the update loop
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.update_loop)
+        self.timer.start(100)
+
+    def update_loop(self):
+        try:
+            if self.robot is not None:
+                if self.robot.client.is_connected:
+                    if state := self.state_watcher.get_state(self.topic_name):
+                        if self.solenoid_name in state:
+                            if state[self.solenoid_name]:  # If the solenoid is open
+                                # Draw the action line horizontally
+                                self.state = "open"
+                            else:  # If the solenoid is closed, draw the action line vertically
+                                self.state = "closed"
+                        else:  # If the solenoid is not in the state, draw the action line diagonally
+                            logging.error(f"Solenoid {self.solenoid_name} not found in state")
+                            self.state = "fault"
+                    else:
+                        logging.error(f"State for topic {self.topic_name} not found")
+                        self.state = "fault"
+                else:
+                    self.state = "fault"
+        except Exception as e:
+            logging.error(f"Error updating solenoid graphic: {e}")
+            # Set the line to be diagonal if there is an error
+            self.state = "fault"
+
+    def paintEvent(self, event):
+        try:
+            painter = QPainter(self)
+            painter.setPen(QtCore.Qt.black)
+
+            # Set the line thickness to 5px
+            # painter.lin
+
+            painter.drawLine(0, 25, 25, 25)
+            painter.drawLine(50, 25, 75, 25)
+            match self.state:
+                case "closed":
+                    painter.drawLine(50, 0, 50, 50)
+                case "open":
+                    painter.drawLine(25, 25, 50, 25)
+                case "fault":
+                    painter.setPen(QtCore.Qt.red)
+                    painter.drawLine(25, 0, 50, 50)
+                case _:
+                    painter.drawLine(25, 0, 50, 25)
+
+
+
+        except Exception as e:
+            logging.error(f"Error setting solenoid graphic: {e}")
 
 
 class AirTankElement(QWidget):
@@ -16,7 +106,7 @@ class AirTankElement(QWidget):
     def __init__(self, tank_name, tank_max_pressure, tank_min_pressure, tank_pressure, tank_pressure_unit,
                  parent=None, robot=None, tank_topic=None):
         super().__init__()
-        super().setFixedSize(530, 140)
+        super().setFixedSize(600, 140)
         super().setParent(parent)
 
         self.robot = robot
@@ -79,6 +169,11 @@ class AirTankElement(QWidget):
         self.pressure_set_button.setFixedSize(50, 30)
         self.pressure_set_button.clicked.connect(self.on_pressure_set)
 
+        # Setup the in-flow and out-flow solenoid graphics
+
+        # self.inflow_solenoid = SolenoidGraphic(parent=self, robot=self.robot, solenoid_name="inflow", topic_name=self.topic)
+        # self.outflow_solenoid = SolenoidGraphic(parent=self, robot=self.robot, solenoid_name="outflow", topic_name=self.topic)
+
         # Instantiate the UI text
         self.tank_name_label = QLabel(f"{self.tank_name}: {self.status}", parent=self)
         # self.tank_name_label.setAlignment(
@@ -96,6 +191,9 @@ class AirTankElement(QWidget):
         self.auto_button.move(320, 85)
         self.fill_button.move(380, 85)
         self.vent_button.move(440, 85)
+        # The solenoid graphics are placed at the very ends of the tank graphic (left and right)
+        # self.inflow_solenoid.move(10, 110 - self.inflow_solenoid.height())
+        # self.outflow_solenoid.move(525 - self.outflow_solenoid.width(), 110 - self.outflow_solenoid.height())
 
         self.set_style_sheets()
 

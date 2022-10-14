@@ -99,12 +99,14 @@ class ROSInterface:
 
     def _connect(self):
         self.client = roslibpy.Ros(host=self.address, port=self.port)
-        while not self.client.is_connected:
-            logging.info("Connection to ROS bridge failed, retrying...")
-            self.client.connect()
-            time.sleep(5)
+
         try:
-            self.client.run()
+            # self.client.run()
+            while not self.client.is_connected:
+                logging.info("Connection to ROS bridge failed, retrying...")
+                # self.client.connect()
+                self.client.run()
+                time.sleep(5)
         except Exception as e:
             print(f"Connection failed: {e}")
             return False
