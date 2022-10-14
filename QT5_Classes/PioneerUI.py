@@ -1,3 +1,5 @@
+import traceback
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMainWindow, QGridLayout
 import logging
@@ -112,15 +114,16 @@ class PioneerUI(QWidget):
         try:
             cmd_vel = self.robot.robot_state_monitor.state_watcher.state("cmd_vel")
             if cmd_vel is not None:
+                # print(f"cmd_vel {cmd_vel.value}")
                 if cmd_vel.value is not None:
-                    self.vel_graph.set(cmd_vel.value[0], cmd_vel.value[1])
+                    self.vel_graph.set(cmd_vel.value['linear']['x'], cmd_vel.value['angular']['z'])
                 # print(cmd_vel.value)
                 else:
                     self.vel_graph.set(0, 0)
             else:
                 self.vel_graph.set(0, 0)
         except Exception as e:
-            logging.error(f"Error updating velocity graph: {e}")
+            logging.error(f"Error updating velocity graph: {e} {traceback.format_exc()}")
             self.vel_graph.set(0, 0)
 
         # Update the motor state with the current motor state

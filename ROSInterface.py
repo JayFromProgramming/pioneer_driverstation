@@ -97,25 +97,26 @@ class ROSInterface:
         self.client.terminate()
         self.background_thread.join()
 
+    def _maintain_connection(self):
+        self._connect()
+        while True:
+            time.sleep(1)
+            if not self.client.is_connected:
+                logging.info("Connection to ROS bridge lost, reconnecting")
+                self._connect()
+
     def _connect(self):
         self.client = roslibpy.Ros(host=self.address, port=self.port)
-
         try:
-            # self.client.run()
-            while not self.client.is_connected:
-                logging.info("Connection to ROS bridge failed, retrying...")
-                # self.client.connect()
-                self.client.run()
-                time.sleep(5)
+            self.client.run()
         except Exception as e:
-            print(f"Connection failed: {e}")
-            return False
+            logging.error(f"Connection to ROS bridge failed: {e}")
+            self.client.terminate()
         else:
             self.publisher = self._setup_publisher("/driver_station")
             self.key_board_publisher = self._setup_publisher("/my_p3at/cmd_vel", message_type="geometry_msgs/Twist")
             self.robot_state_monitor = RobotStateMonitor(self.client)
             print(self.get_services())
-            return True
 
     def _setup_publisher(self, topic, message_type="std_msgs/String"):
         publisher = roslibpy.Topic(self.client, topic, message_type)
