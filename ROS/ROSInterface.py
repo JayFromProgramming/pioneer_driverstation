@@ -19,6 +19,7 @@ topic_to_name = {
     "/my_p3at/cmd_vel": "cmd_vel",
     # "my_p3at/sonar": "sonar",
     # "/my_p3at/sonar_pointcloud2": "sonar_pointcloud2",
+    "/pioneer/conn_stats": "conn_stats",
     "/camera/image/compressed": "Img",
     "/cannon/angle": "cannon_angle",
     "/cannon/tanks/0": "cannon_tank_0",
@@ -37,15 +38,17 @@ class RobotStateMonitor:
         if self.client is None:
             return
 
-        self._load_topics()
+        self.cached_topics = {}
+        self.client.on_ready(self.setup_watchers)
+        # self._load_topics()
         self.setup_watchers()
-        self.cached_topics = None  # type: dict or None
 
     def _load_topics(self):
-
         logging.info("RobotStateMonitor: Loading topics")
         topic_dict = {}
         for topic in self.client.get_topics():
+            if topic in self.cached_topics:
+                continue
             topic_type = self.client.get_topic_type(topic)
             topic_dict[topic] = {"name": topic, "type": topic_type}
             logging.info(f"Loaded topic {topic} of type {topic_type}")
@@ -54,9 +57,11 @@ class RobotStateMonitor:
 
     def setup_watchers(self):
         logging.info("RobotStateMonitor: Setting up watchers")
-        if self.cached_topics is None:
-            self._load_topics()
+        self._load_topics()
         for val, name in topic_to_name.items():
+            # Check if a watcher already exists
+            if self.state_watcher.state(name) is not None:
+                continue
             if val in self.cached_topics:
                 self.setup_listener(name, val)
         logging.info("RobotStateMonitor: Set up watchers")
@@ -122,7 +127,6 @@ class ROSInterface:
             self.client.terminate()
         else:
             self.publisher = self._setup_publisher("/driver_station")
-            self.key_board_publisher = self._setup_publisher("/my_p3at/cmd_vel", message_type="geometry_msgs/Twist")
             self.robot_state_monitor = RobotStateMonitor(self.client)
             print(self.get_services())
 
@@ -132,12 +136,16 @@ class ROSInterface:
         logging.info(f" Publisher setup for topic: {topic}")
         return publisher
 
-    def get_state(self) -> RobotStateMonitor:
-        return self.robot_state_monitor
+    def get_state(self, name):
+        return self.robot_state_monitor.get_state(name)
+
+    def get_state_from_raw(self, name):
+        if name in self.target_topics:
+            return self.get_state(topic_to_name[name])
 
     def drive(self, forward=0.0, turn=0.0):
-        message = roslibpy.Message({"linear": {"x": forward}, "angular": {"z": turn}})
-        self.key_board_publisher.publish(message)
+        state = self.get_state("cmd_vel")
+        state.value = {"linear": {"x": forward}, "angular": {"z": turn}}
 
     def get_services(self):
         return self.client.get_services()

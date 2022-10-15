@@ -74,7 +74,7 @@ class DriverStationUI:
 
         self.window.show()
 
-        threading.Thread(target=self.controller_read_loop).start()
+        threading.Thread(target=self.controller_read_loop, daemon=True).start()
 
     # def run(self):
     #     """Draw the HUD until the program exits"""
@@ -88,20 +88,23 @@ class DriverStationUI:
     def controller_read_loop(self):
         """Loop for the joystick"""
         # Read the controller while the window is open
-        while self.window.isVisible():
-            # Apply deadbands to the joystick
-            forward = self.xbox_controller.LeftJoystickY
-            if abs(forward) < 0.15:
-                forward = 0
-            turn = self.xbox_controller.LeftJoystickX * -1
-            if abs(turn) < 0.15:
-                turn = 0
+        try:
+            while True:
+                # Apply deadbands to the joystick
+                forward = self.xbox_controller.LeftJoystickY
+                if abs(forward) < 0.15:
+                    forward = 0
+                turn = self.xbox_controller.LeftJoystickX * -1
+                if abs(turn) < 0.15:
+                    turn = 0
 
-            self.robot.drive(forward, turn)
+                self.robot.drive(forward, turn)
 
-            if self.xbox_controller.A:
-                self.robot.execute_service("my_p3at/enable_motors")
-            if self.xbox_controller.B:
-                self.robot.execute_service("my_p3at/disable_motors")
+                if self.xbox_controller.A:
+                    self.robot.execute_service("my_p3at/enable_motors")
+                if self.xbox_controller.B:
+                    self.robot.execute_service("my_p3at/disable_motors")
 
-            time.sleep(0.2)
+                time.sleep(0.2)
+        except Exception as e:
+            logging.error(f"Error reading controller: {e}")
