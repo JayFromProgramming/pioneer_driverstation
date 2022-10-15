@@ -221,7 +221,7 @@ class AirTankElement(QWidget):
     def update_loop(self):
         try:
             if self.robot is not None:
-                if self.robot.client.is_connected:
+                if self.robot.is_connected:
                     if self.state_watcher.is_state_available(self.topic):
                         state = self.state_watcher.get_state(self.topic)
                         self.set(state)

@@ -1,11 +1,13 @@
+import ctypes
 import sys
 import asyncio
 import threading
 
 import roslibpy
+from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication
 
-import ROSInterface
+from ROS import ROSInterface
 import DriverStatonUI
 import logging
 import paramiko
@@ -43,16 +45,19 @@ if __name__ == '__main__':
 
     app = QApplication([])
     app.setStyle('Windows')
-    address = "141.219.121.72"
-    port = 9090
+    app.setApplicationName("T-Shirt Cannon Driver Station")
+    app.setApplicationVersion("1.0.0")
+    app.setWindowIcon(QtGui.QIcon("resources/rse.png"))
+    app.setQuitOnLastWindowClosed(True)
+
+    myappid = 'rse.tshirt.cannon.station'  # arbitrary string
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     # if not ssh_ros_start(address, username="ubuntu", password="ubuntu"):
     #     logging.error("ROS not started, exiting")
     #     exit(1)
 
-    pioneer = ROSInterface.ROSInterface(address, port)
-    pioneer.connect()
-    logging.info(f"Connected to ROS master at {address}:{port}")
+    pioneer = ROSInterface.ROSInterface()
     # while pioneer.client.is_connecting:
     #     pass
     gui = DriverStatonUI.DriverStationUI(pioneer)

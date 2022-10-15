@@ -84,7 +84,7 @@ class PioneerSignalWidget(QWidget):
         """Updates the info of the driver station's connection"""
         # Get the info from the command line
         try:
-            if self.robot.client.is_connected:
+            if self.robot.is_connected:
                 if client := self.robot.robot_state_monitor.state_watcher.state("pioneer_conn"):
                     info_dict = client.get_info()
                     self.set_color("black")
@@ -145,7 +145,7 @@ class DriverStationSignalWidget(QWidget):
         super().setParent(parent)
         super().setFixedSize(width, 200)
 
-        self.header = QLabel("Driver Station Connection", parent=self)
+        self.header = QLabel("Driver Station Wi-Fi Connection", parent=self)
         self.header.setStyleSheet("font-size: 17px; font-weight: bold; alignment: center")
         self.network_name = QLabel("Network Name: ", parent=self)
         self.network_name.setStyleSheet("color: black; font-size: 14px; font-weight: bold; alignment: center")

@@ -4,7 +4,7 @@ import roslibpy
 import threading
 import logging
 
-from RobotState import RobotState
+from ROS.RobotState import RobotState
 
 logging = logging.getLogger(__name__)
 
@@ -74,21 +74,31 @@ class RobotStateMonitor:
     def is_state_available(self, name):
         return name in self.state_watcher.states()
 
+    def get_topic_status(self, topic):
+        return self.get_state()
+
 
 class ROSInterface:
 
-    def __init__(self, address="localhost", port=9090, controller=None):
+    def __init__(self):
         self.client = None  # type: roslibpy.Ros or None
-        self.address = address
-        self.port = int(port)
-        self.controller = controller
+        self.address = None
+        self.port = None
         self.robot_state_monitor = RobotStateMonitor(self.client)
         self.publisher = None  # type: roslibpy.Topic or None
         self.key_board_publisher = None  # type: roslibpy.Topic or None
         self.background_thread = None  # type: threading.Thread or None
 
-    def connect(self):
+        self.target_topics = topic_to_name.keys()
+
+    @property
+    def is_connected(self):
+        return self.client.is_connected if self.client is not None else False
+
+    def connect(self, address, port):
         logging.info("Connecting to ROS bridge")
+        self.address = address
+        self.port = port
         self.background_thread = threading.Thread(target=self._connect, daemon=True)
         self.background_thread.start()
 
