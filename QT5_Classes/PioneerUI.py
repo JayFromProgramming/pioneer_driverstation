@@ -128,7 +128,7 @@ class PioneerUI(QWidget):
 
         # Update the motor state with the current motor state
         try:
-            motor_state = self.robot.robot_state_monitor.state_watcher.state("motor_state")
+            motor_state = self.robot.robot_state_monitor.state_watcher.state("motors_state")
             if motor_state is not None:
                 self.motor_state.setText(f"Motor State: {motor_state.value}")
             else:
