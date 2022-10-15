@@ -1,4 +1,5 @@
 import base64
+import time
 from io import BytesIO
 
 import roslibpy
@@ -58,6 +59,7 @@ class State:
         """Callback for the topic, when a message is received"""
         if self.reading:
             return
+        self.last_update = time.time()
         self.has_data = True
         if "data" in message:
             value = message["data"]

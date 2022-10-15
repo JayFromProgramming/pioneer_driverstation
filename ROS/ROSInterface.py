@@ -23,7 +23,8 @@ topic_to_name = {
     "/cannon/angle": "cannon_angle",
     "/cannon/tanks/0": "cannon_tank_0",
     "/cannon/tanks/1": "cannon_tank_1",
-    "/cannon/pneumatics": "pnemumatics"
+    "/cannon/pneumatics": "pnemumatics",
+    "/ext/compressor/voltage": "compressor_voltage",
 }
 
 
@@ -73,9 +74,6 @@ class RobotStateMonitor:
 
     def is_state_available(self, name):
         return name in self.state_watcher.states()
-
-    def get_topic_status(self, topic):
-        return self.get_state()
 
 
 class ROSInterface:
