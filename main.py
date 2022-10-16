@@ -57,7 +57,7 @@ if __name__ == '__main__':
     #     logging.error("ROS not started, exiting")
     #     exit(1)
 
-    pioneer = ROSInterface.ROSInterface()
+    pioneer = ROSInterface.ROSInterface()  # MAC: a0:a8:cd:be:8d:2c
     # while pioneer.client.is_connecting:
     #     pass
     gui = DriverStatonUI.DriverStationUI(pioneer)

@@ -108,3 +108,4 @@ class DriverStationUI:
                 time.sleep(0.2)
         except Exception as e:
             logging.error(f"Error reading controller: {e}")
+            self.robot.drive(0, 0)

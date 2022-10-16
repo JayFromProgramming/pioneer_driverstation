@@ -4,7 +4,7 @@ import roslibpy
 import threading
 import logging
 
-from ROS.RobotState import RobotState
+from ROS.RobotState import RobotState, SmartTopic
 
 logging = logging.getLogger(__name__)
 
@@ -28,6 +28,19 @@ topic_to_name = {
     "/ext/compressor/voltage": "compressor_voltage",
 }
 
+topic_targets = [
+    SmartTopic("battery_voltage", "/my_p3at/battery_voltage"),
+    SmartTopic("motors_state", "/my_p3at/motors_state"),
+    SmartTopic("cmd_vel", "/my_p3at/cmd_vel", allow_update=True),
+    SmartTopic("conn_stats", "/pioneer/conn_stats"),
+    SmartTopic("Img", "/camera/image/compressed"),
+    SmartTopic("cannon_angle", "/cannon/angle"),
+    SmartTopic("cannon_tank_0", "/cannon/tanks/0"),
+    SmartTopic("cannon_tank_1", "/cannon/tanks/1"),
+    SmartTopic("pneumatics", "/cannon/pneumatics"),
+    SmartTopic("compressor_voltage", "/ext/compressor/voltage"),
+]
+
 
 class RobotStateMonitor:
 
@@ -35,12 +48,7 @@ class RobotStateMonitor:
         self.client = client
         self.state_watcher = RobotState()
 
-        if self.client is None:
-            return
-
         self.cached_topics = {}
-        self.client.on_ready(self.setup_watchers)
-        # self._load_topics()
         self.setup_watchers()
 
     def _load_topics(self):
@@ -55,21 +63,19 @@ class RobotStateMonitor:
         self.cached_topics = topic_dict
         logging.info("RobotStateMonitor: Loaded topics")
 
-    def setup_watchers(self):
-        logging.info("RobotStateMonitor: Setting up watchers")
-        self._load_topics()
-        for val, name in topic_to_name.items():
-            # Check if a watcher already exists
-            if self.state_watcher.state(name) is not None:
-                continue
-            if val in self.cached_topics:
-                self.setup_listener(name, val)
-        logging.info("RobotStateMonitor: Set up watchers")
+    def set_client(self, client):
+        self.client = client
+        for smart_topic in topic_targets:
+            smart_topic.set_client(self.client)
 
-    def setup_listener(self, name, topic):
-        message_type = self.cached_topics[topic]["type"]
-        logging.info(f"Setting up listener for {topic} of type {message_type}")
-        self.state_watcher.add_watcher(self.client, name, topic, message_type)
+    def setup_watchers(self):
+        for smart_topic in topic_targets:
+            self.state_watcher.add_watcher(smart_topic)
+
+    # def setup_listener(self, name, topic):
+    #     message_type = self.cached_topics[topic]["type"]
+    #     logging.info(f"Setting up listener for {topic} of type {message_type}")
+    #     self.state_watcher.add_watcher
 
     def get_state(self, name):
         return self.state_watcher.state(name)
@@ -88,11 +94,10 @@ class ROSInterface:
         self.address = None
         self.port = None
         self.robot_state_monitor = RobotStateMonitor(self.client)
-        self.publisher = None  # type: roslibpy.Topic or None
-        self.key_board_publisher = None  # type: roslibpy.Topic or None
         self.background_thread = None  # type: threading.Thread or None
 
         self.target_topics = topic_to_name.keys()
+        self.smart_topics = topic_targets
 
     @property
     def is_connected(self):
@@ -102,6 +107,8 @@ class ROSInterface:
         logging.info("Connecting to ROS bridge")
         self.address = address
         self.port = port
+        self.client = roslibpy.Ros(host=self.address, port=self.port)
+        self.robot_state_monitor.set_client(self.client)
         self.background_thread = threading.Thread(target=self._connect, daemon=True)
         self.background_thread.start()
 
@@ -119,14 +126,12 @@ class ROSInterface:
                 self._connect()
 
     def _connect(self):
-        self.client = roslibpy.Ros(host=self.address, port=self.port)
         try:
             self.client.run()
         except Exception as e:
             logging.error(f"Connection to ROS bridge failed: {e}")
-            self.client.terminate()
+            self.client.close()
         else:
-            self.publisher = self._setup_publisher("/driver_station")
             self.robot_state_monitor = RobotStateMonitor(self.client)
             print(self.get_services())
 
@@ -139,9 +144,8 @@ class ROSInterface:
     def get_state(self, name):
         return self.robot_state_monitor.get_state(name)
 
-    def get_state_from_raw(self, name):
-        if name in self.target_topics:
-            return self.get_state(topic_to_name[name])
+    def get_smart_topics(self):
+        return self.robot_state_monitor.get_states()
 
     def drive(self, forward=0.0, turn=0.0):
         state = self.get_state("cmd_vel")

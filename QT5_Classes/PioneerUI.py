@@ -13,10 +13,15 @@ class CmdVelWidget(QWidget):
     def __init__(self, size=100, expected_bounds=(-1, 1), parent=None):
         super().__init__()
         super().setParent(parent)
-        super().setFixedSize(size + 15, size + 15)
+        super().setFixedSize(size + 30, size + 30)
 
         self.size = size
         self.expected_bounds = expected_bounds
+
+        # Set up the background box
+        self.box = QWidget(parent=self)
+        self.box.setFixedSize(size, size)
+        self.box.setStyleSheet("background-color: black")
 
         # Set up the UI name text
         self.name = QLabel("Velocity CMD", parent=self)
@@ -31,23 +36,15 @@ class CmdVelWidget(QWidget):
         # Set text color to white
         self.value.setStyleSheet("color: green; font-size: 14px; font-weight: bold; alignment: center")
 
-        # Set up the background box
-        self.box = QWidget(parent=self)
-        self.box.setFixedSize(size, size)
-        self.box.setStyleSheet("background-color: black")
-
         # Set up the dot
         self.dot = QLabel("•", parent=self.box)
         # self.dot.setFixedSize(5, 5)
         self.dot.setStyleSheet("background-color: transparent; color: green")
 
         # Set up the layout
-        self.layout = QGridLayout(self)
-        self.layout.addWidget(self.name, 0, 0, 1, 2)
-        self.layout.addWidget(self.box, 1, 0, 1, 2)
-        self.layout.addWidget(self.value, 2, 0, 1, 2)
-
-        super().setLayout(self.layout)
+        self.box.move(15, 15)
+        self.name.move(15, 0)
+        self.value.move(int(15 - self.value.width() / 2), self.box.height() + 15)
 
         self.x = 0  # Center the dot
         self.y = 0  # Center the dot
@@ -67,7 +64,7 @@ class CmdVelWidget(QWidget):
             y = (self.y * self.size / 2) + self.size / 2
 
             # Move the dot to where it should be
-            point = QtCore.QPoint(int(x), int(y))
+            point = QtCore.QPoint(int(x - self.dot.width() / 2), int(y - self.dot.height() / 2))
             self.dot.move(point)
 
             # Update the value text

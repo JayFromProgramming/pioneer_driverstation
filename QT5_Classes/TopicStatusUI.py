@@ -41,37 +41,26 @@ class TopicUI(QWidget):
         self.topic_status_header.setStyleSheet("font-weight: bold; font-size: 17px")
         self.topic_status_header.move(0, 0)
         offset_y = 20
-        for topic in self.robot.target_topics:
-            label = QLabel(f"<pre>{topic}:</pre>", self)
+        for topic in self.robot.get_smart_topics():
+            label = QLabel(f"<pre>{topic.topic_name}:</pre>", self)
+            label.setStyleSheet("font-weight: bold")
             label.move(0, offset_y)
             label.setFixedSize(350, 20)
             self.topic_status_labels.append((topic, label))
             offset_y += 15
 
+        self.update_loop()
         # Setup the timer to update the labels
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_loop)
-        self.update_timer.start(1000)
+        self.update_timer.start(2000)
 
     def update_loop(self):
         try:
             # The topic status's should be on the very right of the text box so we need to figure out how many characters
             # fit in the box and then subtract that from the total length of the name of the topic
-            if not self.robot.is_connected:
-                # Set all the labels to yellow
-                for topic, label in self.topic_status_labels:
-                    update_label_value(label, topic, "UNKNOWN", color="darkorange")
-            else:
-                for topic, label in self.topic_status_labels:
-                    if state := self.robot.get_state_from_raw(topic):
-                        if state.has_data:
-                            if state.last_update < time.time() - 15:
-                                update_label_value(label, topic, "STALE", color="darkorange")
-                            else:
-                                update_label_value(label, topic, "OK", color="green")
-                        else:
-                            update_label_value(label, topic, "NO DATA", color="red")
-                    else:
-                        update_label_value(label, topic, "NOT FOUND", color="red")
+            for topic, label in self.topic_status_labels:
+                status, color = topic.get_status()
+                update_label_value(label, topic.topic_name, status, color=color)
         except Exception as e:
             logging.error(f"Error in topicUI update: {e} {traceback.format_exc()}")

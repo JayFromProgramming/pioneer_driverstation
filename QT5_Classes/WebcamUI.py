@@ -73,7 +73,7 @@ class WebcamWindow(QWidget):
     def initUI(self):
         self.thread = ImageThread(self.robot)
         # self.thread.changePixmap.connect(self.setImage)
-        self.thread.start()
+        # self.thread.start()
         self.repaint()
 
     def closeEvent(self, event):
