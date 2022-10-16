@@ -32,7 +32,7 @@ topic_targets = [
     SmartTopic("battery_voltage", "/my_p3at/battery_voltage"),
     SmartTopic("motors_state", "/my_p3at/motors_state"),
     SmartTopic("cmd_vel", "/my_p3at/cmd_vel", allow_update=True),
-    # SmartTopic("sonar_pointcloud2", "/my_p3at/sonar_pointcloud2"),
+    SmartTopic("sonar_pointcloud2", "/my_p3at/sonar_pointcloud2"),
     SmartTopic("conn_stats", "/pioneer/conn_stats"),
     SmartTopic("Img", "/camera/image/compressed"),
     SmartTopic("solenoids", "/pneumatics/solenoids"),

@@ -21,6 +21,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QImage
 import controller
 from QT5_Classes.CannonUI import CannonUI
 from QT5_Classes.ConnectionUI import ConnectionUI
+from QT5_Classes.PointCloud2UI import PointCloud2UI
 from QT5_Classes.SignalUI import SignalUI
 from QT5_Classes.PioneerUI import PioneerUI
 from QT5_Classes.TopicStatusUI import TopicUI
@@ -58,6 +59,7 @@ class DriverStationUI:
         self.webcam = WebcamWindow(self.robot, self.window)
         self.signal_info = SignalUI(self.robot, self.window)
         self.topic_info = TopicUI(self.robot, self.window)
+        self.sonar_view = PointCloud2UI(self.robot, self.window)
 
         # Move the pioneer UI to the bottom left
         self.pioneer_ui.move(0, 480)
