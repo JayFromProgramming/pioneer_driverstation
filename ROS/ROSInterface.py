@@ -35,10 +35,16 @@ topic_targets = [
     # SmartTopic("sonar_pointcloud2", "/my_p3at/sonar_pointcloud2"),
     SmartTopic("conn_stats", "/pioneer/conn_stats"),
     SmartTopic("Img", "/camera/image/compressed"),
-    SmartTopic("cannon_angle", "/cannon/angle"),
-    SmartTopic("cannon_tank_0", "/cannon/tanks/0"),
-    SmartTopic("cannon_tank_1", "/cannon/tanks/1"),
-    SmartTopic("pneumatics", "/cannon/pneumatics"),
+    SmartTopic("solenoids", "/pneumatics/solenoids"),
+    SmartTopic("cannon_angle", "/cannon/angle", allow_update=True),
+    SmartTopic("diagnostics", "/diagnostics"),
+    SmartTopic("cannon_0_pressure", "/can0/set_pressure"),
+    SmartTopic("cannon_0_set_state", "/can0/set_state", allow_update=True, hidden=True),
+    SmartTopic("cannon_1_set_state", "/arduino/can1/set_state", allow_update=True, hidden=True),
+    # SmartTopic("cannon_0_state", "/arduino/can0/state"),
+    # SmartTopic("cannon_1_state", "/arduino/can1/state"),
+    # SmartTopic("cannon_tank_1", "/cannon/tanks/1"),
+    # SmartTopic("pneumatics", "/cannon/pneumatics"),
     SmartTopic("compressor_voltage", "/ext/compressor/voltage"),
 ]
 
@@ -134,7 +140,9 @@ class ROSInterface:
             self.client.close()
         else:
             self.robot_state_monitor = RobotStateMonitor(self.client)
-            print(self.get_services())
+            print(f"Topics: {self.get_topics()}")
+            print(f"Services: {self.get_services()}")
+            print(f"Nodes: {self.get_nodes()}")
 
     def _setup_publisher(self, topic, message_type="std_msgs/String"):
         publisher = roslibpy.Topic(self.client, topic, message_type)
@@ -150,10 +158,18 @@ class ROSInterface:
 
     def drive(self, forward=0.0, turn=0.0):
         state = self.get_state("cmd_vel")
-        state.value = {"linear": {"x": forward}, "angular": {"z": turn}}
+        state.value = {"linear": {"x": forward, "y": 0, "z": 0},
+                       "angular": {"x": 0, "y": 0, "z": turn}}
+        # logging.info(f"Driving forward: {forward}, turn: {turn}")
 
     def get_services(self):
         return self.client.get_services()
+
+    def get_topics(self):
+        return self.client.get_topics()
+
+    def get_nodes(self):
+        return self.client.get_nodes()
 
     def execute_service(self, name, *args):
         service = roslibpy.Service(self.client, name, 'std_srvs/Empty')

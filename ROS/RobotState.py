@@ -30,11 +30,13 @@ class SmartTopic:
         self.queue_size = kwargs.get("queue_size", 5)
         self.auto_reconnect = kwargs.get("auto_reconnect", True)
         self.allow_update = kwargs.get("allow_update", False)
+        self.hidden = kwargs.get("hidden", False)
 
         self._value = None
         self._lock = threading.Lock()
         self._last_update = 0
         self._listener = None  # type: roslibpy.Topic or None
+        self._publisher = None  # type: roslibpy.Topic or None
         logging.info(f"{self.disp_name} created and initialized... Waiting for connection")
         if self.client is not None:
             self.client.on_ready(self.connect, run_in_thread=True)
@@ -61,17 +63,17 @@ class SmartTopic:
             if self.topic_type == "":
                 self.exists = False
                 logging.error(f"Topic {self.topic_name} does not exist")
-                self._reattempt_connect()  # Try to connect again later
                 return
             else:
                 logging.info(f"Acquired type {self.topic_type} for topic {self.topic_name}")
                 self.exists = True
 
-        self._listener = roslibpy.Topic(self.client, self.topic_name, self.topic_type, queue_size=1, latch=True,
+        self._listener = roslibpy.Topic(self.client, self.topic_name, self.topic_type, queue_size=10,
                                         throttle_rate=self.throttle_rate, reconnect_on_close=self.auto_reconnect)
         self._listener.subscribe(self._update)
         if self.allow_update:
-            self._listener.advertise()
+            self._publisher = roslibpy.Topic(self.client, self.topic_name, self.topic_type)
+            # self._publisher.advertise()
             logging.info(f"{self.disp_name} connected to {self.topic_name} of type {self.topic_type}, publishing enabled")
         else:
             logging.info(f"{self.disp_name} connected to {self.topic_name} of type {self.topic_type}, publishing disabled")
@@ -118,17 +120,28 @@ class SmartTopic:
     @value.setter
     def value(self, updated_values):
         if self.allow_update:
+            # logging.info(f"Updating {self.disp_name} with {updated_values} -> {self.value}")
             if not self.exists:
-                logging.error(f"Topic {self.topic_name} does not exist")
+                # logging.error(f"Topic {self.topic_name} does not exist")
                 return
-            if self.is_single:
-                msg = roslibpy.Message({"data": updated_values})
+            if self.is_single and self.topic_type != "geometry_msgs/Twist":
+                # msg = roslibpy.Message({"data": updated_values})
+                logging.debug(f"Publishing {updated_values} to {self.topic_name}")
             else:
                 # If the value is not a single value, but a list of values or a dictionary
                 # Then we need to update the values in the dictionary and publish the entire dictionary
-                self._value.update(updated_values)
-                msg = roslibpy.Message(self._value)
-            self._listener.publish(msg)
+                # Generate an instance of the message type
+                if self.has_data:
+                    # If we have data, then we can use the current value as a template
+                    msg = roslibpy.Message(self.value)
+                else:
+                    # Otherwise, we need to create a blank message
+                    msg = roslibpy.Message({})
+                # Update the values in the message
+                for key, value in updated_values.items():
+                    msg[key] = value
+
+            self._publisher.publish(msg)
         else:
             raise Exception("This topic is not allowed to be updated")
 

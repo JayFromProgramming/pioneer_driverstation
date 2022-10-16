@@ -91,7 +91,7 @@ class DriverStationUI:
         try:
             while True:
                 # Apply deadbands to the joystick
-                forward = self.xbox_controller.LeftJoystickY
+                forward = self.xbox_controller.LeftJoystickY * -1
                 if abs(forward) < 0.15:
                     forward = 0
                 turn = self.xbox_controller.LeftJoystickX * -1
@@ -105,7 +105,7 @@ class DriverStationUI:
                 if self.xbox_controller.B:
                     self.robot.execute_service("my_p3at/disable_motors")
 
-                time.sleep(0.2)
+                time.sleep(0.1)
         except Exception as e:
             logging.error(f"Error reading controller: {e}")
             self.robot.drive(0, 0)

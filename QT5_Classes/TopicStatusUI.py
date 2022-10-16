@@ -42,6 +42,8 @@ class TopicUI(QWidget):
         self.topic_status_header.move(0, 0)
         offset_y = 20
         for topic in self.robot.get_smart_topics():
+            if topic.hidden:
+                continue
             label = QLabel(f"<pre>{topic.topic_name}:</pre>", self)
             label.setStyleSheet("font-weight: bold")
             label.move(0, offset_y)
