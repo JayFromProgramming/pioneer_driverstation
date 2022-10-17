@@ -170,7 +170,7 @@ class PioneerUI(QWidget):
         try:
             battery_voltage = self.robot.robot_state_monitor.state_watcher.state("battery_voltage")
             if battery_voltage.value is not None:
-                self.battery_voltage.setText(f"{round(battery_voltage.value, 2)}V")
+                self.battery_voltage.setText(f"{round(battery_voltage.value, 3)}V")
             else:
                 self.battery_voltage.setText("Unknown")
         except Exception as e:

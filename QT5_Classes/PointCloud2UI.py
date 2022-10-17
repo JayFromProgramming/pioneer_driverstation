@@ -42,6 +42,7 @@ class PointCloud2UI(QWidget):
                 dot = QLabel("•", parent=self.label)
                 # self.dot.setFixedSize(5, 5)
                 dot.setStyleSheet("background-color: transparent; color: green")
+                dot.move(320, 240)
                 self.dots.append(dot)
 
             # self.window.show()
@@ -60,8 +61,8 @@ class PointCloud2UI(QWidget):
             for point in cloud:
                 # Values are in meters from the center of the robot, so we need to convert them to pixels
                 # Max range is 5 meters, so we need to scale the values to fit on the screen
-                x = int(point["x"] * 100) + 320
-                y = int(point["y"] * 100) + 240
+                x = int(-point["y"] * 25) + 320
+                y = int(point["x"] * 25) + 240
 
                 dot = self.dots[dot_num]
 
@@ -72,10 +73,17 @@ class PointCloud2UI(QWidget):
         except Exception as e:
             logging.error(f"Error in process_cloud: {e} {traceback.format_exc()}")
 
+    def toggle(self):
+        logging.info("Toggling PointCloud2UI")
+        if self.point_cloud_topic._listener.is_subscribed:
+            self.point_cloud_topic.unsubscribe()
+        else:
+            self.point_cloud_topic.resubscribe()
+
     def process_2d_point_cloud(self):
         """Renders the 2D point cloud from the robot's sonar"""
         try:
-            if not self.point_cloud_topic.exists:
+            if self.point_cloud_topic is None or not self.point_cloud_topic.has_data:
                 return
 
             # print(self.point_cloud_topic.value["points"])

@@ -107,6 +107,8 @@ class DriverStationUI:
                     self.robot.execute_service("my_p3at/enable_motors")
                 if self.xbox_controller.B:
                     self.robot.execute_service("my_p3at/disable_motors")
+                if self.xbox_controller.X:
+                    self.sonar_view.toggle()
 
                 time.sleep(0.1)
         except Exception as e:

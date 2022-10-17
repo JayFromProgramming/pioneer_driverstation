@@ -198,6 +198,12 @@ class SmartTopic:
         self._last_update = 0
         logging.info(f"{self.disp_name} unsubscribed from {self.topic_name}")
 
+    def unsubscribe(self):
+        self._listener.unsubscribe()
+
+    def resubscribe(self):
+        self._listener.subscribe(self._update)
+
 
 class ImageHandler:
     """Processes /camera/image/compressed messages"""
