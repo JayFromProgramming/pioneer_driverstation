@@ -52,7 +52,7 @@ class CmdVelWidget(QWidget):
     def set(self, x, y):
         # print(f"Setting to {x}, {y}")
         self.x = -y
-        self.y = -x
+        self.y = x
         self.repaint()
 
     def paintEvent(self, event):

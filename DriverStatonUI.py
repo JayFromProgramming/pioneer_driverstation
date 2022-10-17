@@ -59,7 +59,7 @@ class DriverStationUI:
         self.webcam = WebcamWindow(self.robot, self.window)
         self.signal_info = SignalUI(self.robot, self.window)
         self.topic_info = TopicUI(self.robot, self.window)
-        self.sonar_view = PointCloud2UI(self.robot, self.window)
+        # self.sonar_view = PointCloud2UI(self.robot, self.window)
 
         # Move the pioneer UI to the bottom left
         self.pioneer_ui.move(0, 480)
@@ -93,7 +93,7 @@ class DriverStationUI:
         try:
             while True:
                 # Apply deadbands to the joystick
-                forward = self.xbox_controller.LeftJoystickY * -1
+                forward = self.xbox_controller.LeftJoystickY * 1
                 if abs(forward) < 0.15:
                     forward = 0
                 turn = self.xbox_controller.LeftJoystickX * -1

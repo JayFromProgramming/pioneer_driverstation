@@ -1,4 +1,5 @@
 import time
+import traceback
 
 import roslibpy
 import threading
@@ -32,7 +33,7 @@ topic_targets = [
     SmartTopic("battery_voltage", "/my_p3at/battery_voltage"),
     SmartTopic("motors_state", "/my_p3at/motors_state"),
     SmartTopic("cmd_vel", "/my_p3at/cmd_vel", allow_update=True),
-    SmartTopic("sonar_pointcloud2", "/my_p3at/sonar_pointcloud2"),
+    # SmartTopic("sonar_pointcloud2", "/my_p3at/sonar_pointcloud2"),
     SmartTopic("conn_stats", "/pioneer/conn_stats"),
     SmartTopic("Img", "/camera/image/compressed"),
     SmartTopic("solenoids", "/pneumatics/solenoids"),
@@ -75,6 +76,11 @@ class RobotStateMonitor:
         for smart_topic in topic_targets:
             smart_topic.set_client(self.client)
 
+    def unsub_all(self):
+        logging.info("Unsubscribing from all topics")
+        for smart_topic in self.state_watcher.states():
+            smart_topic.unsub()
+
     def setup_watchers(self):
         for smart_topic in topic_targets:
             self.state_watcher.add_watcher(smart_topic)
@@ -111,26 +117,43 @@ class ROSInterface:
         return self.client.is_connected if self.client is not None else False
 
     def connect(self, address, port):
-        logging.info("Connecting to ROS bridge")
-        self.address = address
-        self.port = port
-        self.client = roslibpy.Ros(host=self.address, port=self.port)
-        self.robot_state_monitor.set_client(self.client)
-        self.background_thread = threading.Thread(target=self._connect, daemon=True)
-        self.background_thread.start()
+        try:
+            logging.info("Connecting to ROS bridge")
+            self.address = address
+            self.port = port
+            self.client = roslibpy.Ros(host=self.address, port=self.port)
+            self.robot_state_monitor.set_client(self.client)
+            # self.background_thread = threading.Thread(target=self._connect, daemon=True)
+            # self.background_thread.start()
+        except Exception as e:
+            logging.error(f"Error connecting to ROS bridge: {e} {traceback.format_exc()}")
+
+    def disconnect(self):
+        try:
+            self.terminate()
+            del self.client  # Force garbage collection of the client
+            self.client = None
+            # self.client = roslibpy.Ros(host=self.address, port=self.port)
+            self.robot_state_monitor.set_client(self.client)
+        except Exception as e:
+            logging.error(f"Failed to disconnect: {e} {traceback.format_exc()}")
 
     def terminate(self):
         logging.info("Terminating ROSInterface")
+        self.robot_state_monitor.unsub_all()
         self.client.terminate()
-        self.background_thread.join()
+        del self.client
+        self.client = None
+        # self.robot_state_monitor.set_client(self.client)
 
     def _maintain_connection(self):
-        self._connect()
-        while True:
-            time.sleep(1)
-            if not self.client.is_connected:
-                logging.info("Connection to ROS bridge lost, reconnecting")
-                self._connect()
+        # self._connect()
+        # while True:
+        #     time.sleep(1)
+        #     if not self.client.is_connected:
+        #         logging.info("Connection to ROS bridge lost, reconnecting")
+        #         self._connect()
+        pass
 
     def _connect(self):
         try:

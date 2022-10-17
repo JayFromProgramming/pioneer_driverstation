@@ -42,8 +42,11 @@ class SmartTopic:
             self.client.on_ready(self.connect, run_in_thread=True)
 
     def set_client(self, client):
-        self.client = client
-        self.client.on_ready(self.connect, run_in_thread=True)
+        try:
+            self.client = client
+            self.client.on_ready(self.connect, run_in_thread=True)
+        except Exception as e:
+            logging.error(f"Error setting client for {self.disp_name}: {e}")
 
     def set_type(self, topic_type):
         self.topic_type = topic_type
@@ -168,6 +171,19 @@ class SmartTopic:
             return "NO CONN", "red"
         else:
             return "MISSING", "red"
+
+    def unsub(self):
+        if self._listener:
+            self._listener.unsubscribe()
+        if self._publisher:
+            self._publisher.unadvertise()
+
+        self.exists = False
+        self.has_data = False
+        self._value = None
+        self._has_changed = False
+        self._last_update = 0
+        logging.info(f"{self.disp_name} unsubscribed from {self.topic_name}")
 
 
 class ImageHandler:
