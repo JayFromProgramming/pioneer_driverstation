@@ -128,8 +128,8 @@ class ROSInterface:
             self.port = port
             self.client = roslibpy.Ros(host=self.address, port=self.port)
             self.robot_state_monitor.set_client(self.client)
-            # self.background_thread = threading.Thread(target=self._connect, daemon=True)
-            # self.background_thread.start()
+            self.background_thread = threading.Thread(target=self._connect, daemon=True)
+            self.background_thread.start()
         except Exception as e:
             logging.error(f"Error connecting to ROS bridge: {e} {traceback.format_exc()}")
 
@@ -204,8 +204,8 @@ class ROSInterface:
             raise Exception("No ROS client")
         if not self.client.is_connected:
             raise Exception("Not connected to ROS bridge")
-        if name not in self.client.get_services():
-            raise Exception(f"Service {name} not available")
+        # if name not in self.client.get_services():
+        #     raise Exception(f"Service {name} not available")
         service = roslibpy.Service(self.client, name, 'std_srvs/Empty')
         request = roslibpy.ServiceRequest()
         service.call(request, callback=callback, errback=errback, timeout=timeout)

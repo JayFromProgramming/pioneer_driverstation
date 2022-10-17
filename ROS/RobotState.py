@@ -64,6 +64,7 @@ class SmartTopic:
 
     def _recheck_exists(self):
         """If the topic didn't exist at ready this loop runs to try to see if it has appeared"""
+        return
         time.sleep(5 + random.randint(0, 5))
         if not self.exists and self.client.is_connected:
             self.client.get_topic_type(self.topic_name, self._topic_type_callback)
