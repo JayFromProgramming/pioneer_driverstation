@@ -1,7 +1,7 @@
 import traceback
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMainWindow, QGridLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMainWindow, QGridLayout, QPushButton
 import logging
 
 logging = logging.getLogger(__name__)
@@ -86,27 +86,49 @@ class PioneerUI(QWidget):
     def __init__(self, robot, parent=None):
         super().__init__()
         super().setParent(parent)
-        super().setFixedSize(300, 300)
+        super().setFixedSize(300, 350)
 
         self.robot = robot
 
         # Instantiate the UI graphics
         self.vel_graph = CmdVelWidget(100, (-1, 1), parent=self)
-        self.motor_state = QLabel("Motor State: ", parent=self)
-        self.motor_state.setFixedSize(150, 20)
-        self.battery_voltage = QLabel("Battery Voltage: ", parent=self)
-        self.battery_voltage.setFixedSize(150, 20)
+        self.motor_state = QLabel("Motor State", parent=self)
+        self.motor_state.setFixedSize(110, 20)
+        self.motor_state.setStyleSheet("color: black; font-size: 17px; font-weight: bold; alignment: center")
+        self.motor_state_toggle = QPushButton("Unknown", parent=self)
+        self.motor_state_toggle.setFixedSize(100, 40)
+        self.motor_state_toggle.clicked.connect(self.toggle_motor_state)
+        self.motor_state_toggle.setStyleSheet("font-color: black; font-size: 17px; font-weight: bold; alignment: center")
+        self.motor_state_toggle.setEnabled(False)
+        self.battery_voltage_header = QLabel("Battery Voltage", parent=self)
+        self.battery_voltage_header.setFixedSize(150, 20)
+        self.battery_voltage_header.setStyleSheet("color: black; font-size: 17px; font-weight: bold; alignment: center")
+        self.battery_voltage = QLabel("Unknown", parent=self)
+        self.battery_voltage.setFixedSize(100, 20)
+        self.battery_voltage.setStyleSheet("color: black; font-size: 17px; font-weight: bold; alignment: center")
 
         # Set the layout of the UI
 
         self.vel_graph.move(0, 0)
-        self.motor_state.move(0, 140)
-        self.battery_voltage.move(0, 160)
+        self.motor_state.move(120, 10)
+        self.motor_state_toggle.move(120, 35)
+        self.battery_voltage_header.move(120, 75)
+        self.battery_voltage.move(120, 100)
+
 
         # Set the update timer
         self.update_timer = QtCore.QTimer()
         self.update_timer.timeout.connect(self.updateUI)
         self.update_timer.start(100)
+
+    def toggle_motor_state(self):
+        try:
+            if self.motor_state_toggle.text() == "Enabled":
+                self.robot.execute_service("my_p3at/disable_motors")
+            else:
+                self.robot.execute_service("my_p3at/enable_motors")
+        except Exception as e:
+            logging.error(f"Error in toggle_motor_state: {e}")
 
     def updateUI(self):
         # Update the velocity graph with the current commanded velocity
@@ -128,10 +150,18 @@ class PioneerUI(QWidget):
         # Update the motor state with the current motor state
         try:
             motor_state = self.robot.robot_state_monitor.state_watcher.state("motors_state")
-            if motor_state is not None:
-                self.motor_state.setText(f"Motor State: {motor_state.value}")
+            if motor_state.value is not None:
+                self.motor_state_toggle.setEnabled(True)
+                if motor_state.value:
+                    self.motor_state_toggle.setText("Enabled")
+                    self.motor_state_toggle.setStyleSheet("background-color: green")
+                else:
+                    self.motor_state_toggle.setText("Disabled")
+                    self.motor_state_toggle.setStyleSheet("background-color: red")
             else:
-                self.motor_state.setText("Motor State: Unknown")
+                self.motor_state_toggle.setText("Unknown")
+                self.motor_state_toggle.setStyleSheet("font-color: darkorange")
+                self.motor_state_toggle.setEnabled(True)
         except Exception as e:
             logging.error(f"Error updating motor state: {e}")
             self.motor_state.setText("Motor State: Error")
@@ -139,10 +169,10 @@ class PioneerUI(QWidget):
         # Update the battery voltage with the current battery voltage
         try:
             battery_voltage = self.robot.robot_state_monitor.state_watcher.state("battery_voltage")
-            if battery_voltage is not None:
-                self.battery_voltage.setText(f"Battery Voltage: {battery_voltage.value}")
+            if battery_voltage.value is not None:
+                self.battery_voltage.setText(f"{round(battery_voltage.value, 2)}V")
             else:
-                self.battery_voltage.setText("Battery Voltage: Unknown")
+                self.battery_voltage.setText("Unknown")
         except Exception as e:
             logging.error(f"Error updating battery voltage: {e}")
             self.battery_voltage.setText("Battery Voltage: Error")

@@ -1,4 +1,5 @@
 import base64
+import random
 import threading
 import time
 from io import BytesIO
@@ -51,13 +52,23 @@ class SmartTopic:
     def set_type(self, topic_type):
         self.topic_type = topic_type
 
-    def _reattempt_connect(self):
-        """If the topic wasn't available during initialization we will continue to try to acquire it"""
-        time.sleep(1)
-        if self.client.is_connected:
-            self.connect()
+    def _topic_type_callback(self, topic_type):
+        if topic_type == "":
+            self.exists = False
+            logging.debug(f"Topic {self.topic_name} does not exist")
+            thread = threading.Thread(target=self._recheck_exists, daemon=True)
+            thread.start()
         else:
-            self.client.on_ready(self.connect)
+            logging.info(f"Acquired type {topic_type} for topic {self.topic_name}")
+            self.connect()
+
+    def _recheck_exists(self):
+        """If the topic didn't exist at ready this loop runs to try to see if it has appeared"""
+        time.sleep(5 + random.randint(0, 5))
+        if not self.exists and self.client.is_connected:
+            self.client.get_topic_type(self.topic_name, self._topic_type_callback)
+        else:
+            logging.info(f"Topic recheck has been cancelled for {self.topic_name}")
 
     def connect(self):
         if self.topic_type is None:
@@ -66,6 +77,7 @@ class SmartTopic:
             if self.topic_type == "":
                 self.exists = False
                 logging.error(f"Topic {self.topic_name} does not exist")
+                threading.Thread(target=self._recheck_exists, daemon=True).start()
                 return
             else:
                 logging.info(f"Acquired type {self.topic_type} for topic {self.topic_name}")

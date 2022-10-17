@@ -31,17 +31,19 @@ topic_to_name = {
 
 topic_targets = [
     SmartTopic("battery_voltage", "/my_p3at/battery_voltage"),
-    SmartTopic("motors_state", "/my_p3at/motors_state"),
+    SmartTopic("motors_state", "/my_p3at/motors_state", hidden=True),
     SmartTopic("cmd_vel", "/my_p3at/cmd_vel", allow_update=True),
+    SmartTopic("odometry", "/my_p3at/pose"),
+    SmartTopic("sonar", "/my_p3at/sonar"),
     # SmartTopic("sonar_pointcloud2", "/my_p3at/sonar_pointcloud2"),
-    SmartTopic("conn_stats", "/pioneer/conn_stats"),
+    # SmartTopic("conn_stats", "/pioneer/conn_stats"),
     SmartTopic("Img", "/camera/image/compressed"),
     SmartTopic("solenoids", "/pneumatics/solenoids"),
     SmartTopic("cannon_angle", "/cannon/angle", allow_update=True),
-    SmartTopic("diagnostics", "/diagnostics"),
+    # SmartTopic("diagnostics", "/diagnostics"),
     SmartTopic("cannon_0_pressure", "/can0/set_pressure"),
     SmartTopic("cannon_0_set_state", "/can0/set_state", allow_update=True, hidden=True),
-    SmartTopic("cannon_1_set_state", "/arduino/can1/set_state", allow_update=True, hidden=True),
+    SmartTopic("cannon_1_set_state", "/can1/set_state", allow_update=True, hidden=True),
     # SmartTopic("cannon_0_state", "/arduino/can0/state"),
     # SmartTopic("cannon_1_state", "/arduino/can1/state"),
     # SmartTopic("cannon_tank_1", "/cannon/tanks/1"),
@@ -101,6 +103,9 @@ class RobotStateMonitor:
 
 
 class ROSInterface:
+    """
+    This class handles the connection to the ROS bridge and all the SmartTopics
+    """
 
     def __init__(self):
         self.client = None  # type: roslibpy.Ros or None
@@ -194,7 +199,13 @@ class ROSInterface:
     def get_nodes(self):
         return self.client.get_nodes()
 
-    def execute_service(self, name, *args):
+    def execute_service(self, name, callback=None, errback=None, timeout=5):
+        if self.client is None:
+            raise Exception("No ROS client")
+        if not self.client.is_connected:
+            raise Exception("Not connected to ROS bridge")
+        if name not in self.client.get_services():
+            raise Exception(f"Service {name} not available")
         service = roslibpy.Service(self.client, name, 'std_srvs/Empty')
         request = roslibpy.ServiceRequest()
-        service.call(request, *args)
+        service.call(request, callback=callback, errback=errback, timeout=timeout)
