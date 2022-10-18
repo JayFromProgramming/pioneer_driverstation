@@ -91,8 +91,6 @@ class SolenoidGraphic(QWidget):
                 case _:
                     painter.drawLine(25, 0, 50, 25)
 
-
-
         except Exception as e:
             logging.error(f"Error setting solenoid graphic: {e}")
 

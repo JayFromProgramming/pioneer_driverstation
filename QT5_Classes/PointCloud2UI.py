@@ -61,8 +61,8 @@ class PointCloud2UI(QWidget):
             for point in cloud:
                 # Values are in meters from the center of the robot, so we need to convert them to pixels
                 # Max range is 5 meters, so we need to scale the values to fit on the screen
-                x = int(-point["y"] * 25) + 320
-                y = int(point["x"] * 25) + 240
+                x = round(point["y"] * 30) + 320
+                y = round(-point["x"] * 30) + 240
 
                 dot = self.dots[dot_num]
 
