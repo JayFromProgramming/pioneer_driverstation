@@ -1,3 +1,4 @@
+import inputs
 from inputs import get_gamepad
 import math
 import time
@@ -45,7 +46,10 @@ class XboxController(object):
 
     def _monitor_controller(self):
         while True:
-            events = get_gamepad()
+            try:
+                events = get_gamepad()
+            except inputs.UnpluggedError:
+                events = []
             for event in events:
                 if event.code == 'ABS_Y':
                     self.LeftJoystickY = event.state / XboxController.MAX_JOY_VAL  # normalize between -1 and 1
