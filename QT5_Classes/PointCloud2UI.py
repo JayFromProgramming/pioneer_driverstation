@@ -69,6 +69,13 @@ class PointCloud2UI(QWidget):
                 x = (round(-point["y"] * 30) + 320) - self.dot_x_offset
                 y = (round(-raw_y * 30) + 240) - self.dot_y_offset
 
+                # calculate the distance from the center of the robot
+                distance = np.sqrt(point["x"] ** 2 + point["y"] ** 2)
+                if distance > 5:
+                    self.dots[dot_num].setStyleSheet("background-color: transparent; color: red")
+                else:
+                    self.dots[dot_num].setStyleSheet("background-color: transparent; color: green")
+
                 dot = self.dots[dot_num]
 
                 # Move the dot to the correct location
