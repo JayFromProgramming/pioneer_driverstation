@@ -1,3 +1,4 @@
+import math
 import traceback
 
 from PyQt5 import QtCore
@@ -106,6 +107,15 @@ class PioneerUI(QWidget):
         self.battery_voltage = QLabel("Unknown", parent=self)
         self.battery_voltage.setFixedSize(100, 20)
         self.battery_voltage.setStyleSheet("color: black; font-size: 17px; font-weight: bold; alignment: center")
+        self.velocity_header = QLabel("Velocity", parent=self)
+        self.velocity_header.setFixedSize(100, 20)
+        self.velocity_header.setStyleSheet("color: black; font-size: 17px; font-weight: bold; alignment: center")
+        self.velocity = QLabel("Unknown", parent=self)
+        self.velocity.setFixedSize(140, 40)
+        self.last_positon = (0, 0, 0)  # X, Y
+        self.last_rotation = (0, 0, 0)  # X, Y, Z
+        self.last_update_time = 0
+        self.last_vel = (0, 0)
 
         # Set the layout of the UI
 
@@ -114,7 +124,10 @@ class PioneerUI(QWidget):
         self.motor_state_toggle.move(120, 35)
         self.battery_voltage_header.move(120, 75)
         self.battery_voltage.move(120, 100)
+        self.velocity_header.move(15, 120)
+        self.velocity.move(15, 145)
 
+        self.update()
 
         # Set the update timer
         self.update_timer = QtCore.QTimer()
@@ -170,9 +183,68 @@ class PioneerUI(QWidget):
         try:
             battery_voltage = self.robot.robot_state_monitor.state_watcher.state("battery_voltage")
             if battery_voltage.value is not None:
+                if battery_voltage.value > 12.5:
+                    self.battery_voltage.setStyleSheet("color: green; font-size: 17px; font-weight: bold")
+                elif battery_voltage.value > 12.2:
+                    self.battery_voltage.setStyleSheet("color: darkorange; font-size: 17px; font-weight: bold")
+                else:
+                    self.battery_voltage.setStyleSheet("color: red; font-size: 17px; font-weight: bold")
                 self.battery_voltage.setText(f"{round(battery_voltage.value, 3)}V")
             else:
                 self.battery_voltage.setText("Unknown")
         except Exception as e:
             logging.error(f"Error updating battery voltage: {e}")
             self.battery_voltage.setText("Battery Voltage: Error")
+
+        try:
+            pose = self.robot.robot_state_monitor.state_watcher.state("odometry")
+            if pose.value is not None:
+                for_vel, rot_vel = self.calculate_velocity(pose.value)
+                if for_vel is None:
+                    self.velocity.setStyleSheet("color: darkorange")
+                    for_vel = self.last_vel[0]
+                    rot_vel = self.last_vel[1]
+                else:
+                    self.velocity.setStyleSheet("color: black")
+                    # Convert from m/s to mi/hr
+                    for_vel = for_vel * 2.23694
+                    # Convert from rad/s to deg/s
+                    rot_vel = rot_vel * 57.2958
+                    self.last_vel = (for_vel, rot_vel)
+                self.velocity.setText(f"Forward: {round(for_vel, 2)} mph\nRotation: {round(rot_vel, 2)} deg/s")
+            else:
+                self.velocity.setText("Unknown")
+        except Exception as e:
+            logging.error(f"Error updating pose: {e}")
+
+    def calculate_velocity(self, pose):
+
+        # Calculate the velocity
+        current_position = (pose['pose']['pose']['position']['x'], pose['pose']['pose']['position']['y'])
+        current_rotation = (pose['pose']['pose']['orientation']['x'], pose['pose']['pose']['orientation']['y'], pose['pose']['pose']['orientation']['z'])
+        current_time = pose['header']['stamp']['secs'] + pose['header']['stamp']['nsecs'] / 1000000000
+
+        # Calculate the distance travelled since the last update
+        distance = math.sqrt((current_position[0] - self.last_positon[0])**2 + (current_position[1] - self.last_positon[1])**2)
+
+        # Calculate the angle rotated since the last update
+        angle = math.sqrt((current_rotation[0] - self.last_rotation[0])**2 + (current_rotation[1] - self.last_rotation[1])**2 + (current_rotation[2] - self.last_rotation[2])**2)
+
+        # Account for the time since the last update
+        time_delta = current_time - self.last_update_time
+
+        if time_delta == 0:
+            return None, None
+
+        # Calculate the velocity
+        forward_velocity = distance / time_delta
+        rotational_velocity = angle / time_delta
+
+        # Update the last position and rotation
+        self.last_positon = current_position
+        self.last_rotation = current_rotation
+        self.last_update_time = current_time
+
+        return forward_velocity * 1.5, rotational_velocity * 1.5
+
+

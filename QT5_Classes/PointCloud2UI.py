@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
 
 logging = logging.getLogger(__name__)
 
+
 class PointCloud2UI(QWidget):
 
     def __init__(self, robot, parent=None):
@@ -63,8 +64,10 @@ class PointCloud2UI(QWidget):
             for point in cloud:
                 # Values are in meters from the center of the robot, so we need to convert them to pixels
                 # Max range is 5 meters, so we need to scale the values to fit on the screen
-                x = (round(point["y"] * 30) + 320) - self.dot_x_offset
-                y = (round(-point["x"] * 30) + 240) - self.dot_y_offset
+                # raw_x = point["y"] - 0.5 if point["y"] > 0 else point["y"] + 0.5
+                raw_y = point["x"] + 0.5 if point["x"] > 0 else point["x"] - 0.5
+                x = (round(-point["y"] * 30) + 320) - self.dot_x_offset
+                y = (round(-raw_y * 30) + 240) - self.dot_y_offset
 
                 dot = self.dots[dot_num]
 
@@ -79,7 +82,13 @@ class PointCloud2UI(QWidget):
         """Draw lines inbetween each adjacent point"""
 
         last_dot = self.dots[-1]  # Grab the last point in the list
-        qp.setPen(QtGui.QPen(QtCore.Qt.green, 1, QtCore.Qt.SolidLine))
+
+        if not self.point_cloud_topic.has_data:
+            qp.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.SolidLine))
+        elif self.point_cloud_topic._last_update < time.time() - 5 or not self.point_cloud_topic._listener.is_subscribed:
+            qp.setPen(QtGui.QPen(QtCore.Qt.darkYellow, 1, QtCore.Qt.SolidLine))
+        else:
+            qp.setPen(QtGui.QPen(QtCore.Qt.green, 1, QtCore.Qt.SolidLine))
 
         for dot in self.dots:
             # Draw a line from the last dot to the current dot
@@ -99,8 +108,10 @@ class PointCloud2UI(QWidget):
             logging.info("Toggling PointCloud2UI")
             if self.point_cloud_topic._listener.is_subscribed:
                 self.point_cloud_topic.unsubscribe()
+                self.timer.stop()
             else:
                 self.point_cloud_topic.resubscribe()
+                self.timer.start()
         except Exception as e:
             logging.error(f"Error in toggle: {e} {traceback.format_exc()}")
 
