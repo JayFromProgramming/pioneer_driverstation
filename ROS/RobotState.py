@@ -172,10 +172,13 @@ class SmartTopic:
         """Returns the current state of the topic, and that states associated color"""
         if self.exists:
             if self.has_data:
-                if self._last_update > time.time() - 5:
-                    return f"{round(self.get_update_rate())}Hz: OK", "green"
+                if self._listener.subscribed:
+                    if self._last_update > time.time() - 5:
+                        return f"{round(self.get_update_rate())}Hz: OK", "green"
+                    else:
+                        return "STALE", "darkorange"
                 else:
-                    return "STALE", "darkorange"
+                    return "UNSUBED", "darkorange"
             else:
                 return "NO DATA", "red"
         elif not self.client:

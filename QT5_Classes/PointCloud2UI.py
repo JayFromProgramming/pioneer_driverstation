@@ -1,31 +1,23 @@
 import base64
 import logging
 import struct
+import time
 import traceback
 
 import numpy as np
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QWidget, QLabel
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
 
 logging = logging.getLogger(__name__)
-
-
-def render_2d_point_cloud():
-    """Display the 2d array"""
-    try:
-        pass
-    except Exception as e:
-        logging.error(f"Error in render_2d_point_cloud: {e} {traceback.format_exc()}")
-
 
 class PointCloud2UI(QWidget):
 
     def __init__(self, robot, parent=None):
         super().__init__()
         super().setParent(parent)
-        super().setFixedSize(640, 480)
+        super().setFixedSize(640, 500)
         try:
             self.robot = robot
 
@@ -33,8 +25,15 @@ class PointCloud2UI(QWidget):
 
             # self.window = QWidget()
             self.label = QLabel(self)
-            self.label.setFixedSize(640, 480)
+            self.label.setFixedSize(640, 470)
             self.label.setStyleSheet("background-color: black")
+            # Add a paint event to the label
+            self.label.paintEvent = self.labelPaintEvent
+
+            self.toggle_button = QPushButton("Toggle Scan", self)
+
+            self.dot_x_offset = 3
+            self.dot_y_offset = 8
 
             # Create a 2D array to store the point cloud
             self.dots = []
@@ -42,8 +41,11 @@ class PointCloud2UI(QWidget):
                 dot = QLabel("•", parent=self.label)
                 # self.dot.setFixedSize(5, 5)
                 dot.setStyleSheet("background-color: transparent; color: green")
-                dot.move(320, 240)
+                dot.move(320 - self.dot_x_offset, 240 - self.dot_y_offset)
                 self.dots.append(dot)
+
+            self.toggle_button.clicked.connect(self.toggle)
+            self.toggle_button.move(10, 471)
 
             # self.window.show()
 
@@ -61,8 +63,8 @@ class PointCloud2UI(QWidget):
             for point in cloud:
                 # Values are in meters from the center of the robot, so we need to convert them to pixels
                 # Max range is 5 meters, so we need to scale the values to fit on the screen
-                x = round(point["y"] * 30) + 320
-                y = round(-point["x"] * 30) + 240
+                x = (round(point["y"] * 30) + 320) - self.dot_x_offset
+                y = (round(-point["x"] * 30) + 240) - self.dot_y_offset
 
                 dot = self.dots[dot_num]
 
@@ -73,12 +75,34 @@ class PointCloud2UI(QWidget):
         except Exception as e:
             logging.error(f"Error in process_cloud: {e} {traceback.format_exc()}")
 
+    def draw_lines(self, qp):
+        """Draw lines inbetween each adjacent point"""
+
+        last_dot = self.dots[-1]  # Grab the last point in the list
+        qp.setPen(QtGui.QPen(QtCore.Qt.green, 1, QtCore.Qt.SolidLine))
+
+        for dot in self.dots:
+            # Draw a line from the last dot to the current dot
+            start_x = last_dot.x() + self.dot_x_offset
+            start_y = last_dot.y() + self.dot_y_offset
+            end_x = dot.x() + self.dot_x_offset
+            end_y = dot.y() + self.dot_y_offset
+            qp.drawLine(start_x, start_y, end_x, end_y)
+            last_dot = dot
+
+        qp.setPen(QtGui.QPen(QtCore.Qt.gray, 1, QtCore.Qt.DashLine))
+        qp.drawLine(320, 0, 320, 480)
+        qp.drawLine(0, 240, 640, 240)
+
     def toggle(self):
-        logging.info("Toggling PointCloud2UI")
-        if self.point_cloud_topic._listener.is_subscribed:
-            self.point_cloud_topic.unsubscribe()
-        else:
-            self.point_cloud_topic.resubscribe()
+        try:
+            logging.info("Toggling PointCloud2UI")
+            if self.point_cloud_topic._listener.is_subscribed:
+                self.point_cloud_topic.unsubscribe()
+            else:
+                self.point_cloud_topic.resubscribe()
+        except Exception as e:
+            logging.error(f"Error in toggle: {e} {traceback.format_exc()}")
 
     def process_2d_point_cloud(self):
         """Renders the 2D point cloud from the robot's sonar"""
@@ -92,8 +116,13 @@ class PointCloud2UI(QWidget):
         except Exception as e:
             logging.error(f"Error in render_2d_point_cloud: {e} {traceback.format_exc()}")
 
-    def paintEvent(self, event) -> None:
+    def labelPaintEvent(self, event) -> None:
         try:
-            render_2d_point_cloud()
+            # Clear the previous image
+            self.label.clear()
+            qp = QtGui.QPainter()
+            qp.begin(self.label)
+            self.draw_lines(qp)
+            qp.end()
         except Exception as e:
             logging.error(f"Error in paintEvent: {e} {traceback.format_exc()}")
