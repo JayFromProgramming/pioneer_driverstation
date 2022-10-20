@@ -5,7 +5,7 @@ import roslibpy
 import threading
 import logging
 
-from ROS.RobotState import RobotState, SmartTopic
+from ROS.RobotState import RobotState, SmartTopic, ImageHandler
 
 logging = logging.getLogger(__name__)
 
@@ -37,7 +37,6 @@ topic_targets = [
     SmartTopic("sonar", "/my_p3at/sonar"),
     # SmartTopic("sonar_pointcloud2", "/my_p3at/sonar_pointcloud2"),
     # SmartTopic("conn_stats", "/pioneer/conn_stats"),
-    SmartTopic("Img", "/camera/image/compressed"),
     SmartTopic("solenoids", "/pneumatics/solenoids"),
     SmartTopic("cannon_angle", "/cannon/angle", allow_update=True),
     # SmartTopic("diagnostics", "/diagnostics"),
@@ -49,6 +48,7 @@ topic_targets = [
     # SmartTopic("cannon_tank_1", "/cannon/tanks/1"),
     # SmartTopic("pneumatics", "/cannon/pneumatics"),
     SmartTopic("compressor_voltage", "/ext/compressor/voltage"),
+    # ImageHandler("Img", "/usb_cam/image_raw"),
 ]
 
 
@@ -117,9 +117,17 @@ class ROSInterface:
         self.target_topics = topic_to_name.keys()
         self.smart_topics = topic_targets
 
+        self.future_callbacks = []
+
     @property
     def is_connected(self):
         return self.client.is_connected if self.client is not None else False
+
+    def hook_on_ready(self, callback):
+        if self.client is not None:
+            self.client.on_ready(callback)
+        else:
+            self.future_callbacks.append(callback)
 
     def connect(self, address, port):
         try:
@@ -130,6 +138,10 @@ class ROSInterface:
             self.robot_state_monitor.set_client(self.client)
             self.background_thread = threading.Thread(target=self._connect, daemon=True)
             self.background_thread.start()
+
+            # for smart_topic in self.smart_topics:
+            #     smart_topic.connect()
+
         except Exception as e:
             logging.error(f"Error connecting to ROS bridge: {e} {traceback.format_exc()}")
 
@@ -171,6 +183,8 @@ class ROSInterface:
             print(f"Topics: {self.get_topics()}")
             print(f"Services: {self.get_services()}")
             print(f"Nodes: {self.get_nodes()}")
+            for callback in self.future_callbacks:
+                self.client.on_ready(callback)
 
     def _setup_publisher(self, topic, message_type="std_msgs/String"):
         publisher = roslibpy.Topic(self.client, topic, message_type)

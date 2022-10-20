@@ -4,6 +4,8 @@ import threading
 import time
 from io import BytesIO
 
+import cv2
+import numpy as np
 import roslibpy
 import logging
 from PIL import Image
@@ -32,6 +34,7 @@ class SmartTopic:
         self.auto_reconnect = kwargs.get("auto_reconnect", True)
         self.allow_update = kwargs.get("allow_update", False)
         self.hidden = kwargs.get("hidden", False)
+        self._compression = kwargs.get("compression", None)
 
         self._value = None
         self._lock = threading.Lock()
@@ -84,8 +87,9 @@ class SmartTopic:
                 logging.info(f"Acquired type {self.topic_type} for topic {self.topic_name}")
                 self.exists = True
 
-        self._listener = roslibpy.Topic(self.client, self.topic_name, self.topic_type, queue_size=10,
-                                        throttle_rate=self.throttle_rate, reconnect_on_close=self.auto_reconnect)
+        self._listener = roslibpy.Topic(self.client, self.topic_name, self.topic_type, queue_size=5,
+                                        throttle_rate=self.throttle_rate, reconnect_on_close=self.auto_reconnect,
+                                        compression=self._compression)
         self._listener.subscribe(self._update)
         if self.allow_update:
             self._publisher = roslibpy.Topic(self.client, self.topic_name, self.topic_type)
@@ -164,7 +168,10 @@ class SmartTopic:
     def get_update_rate(self) -> float:
         """Returns the current update rate of the topic in Hz"""
         if len(self._update_interval) > 1:
-            return 1 / ((self._update_interval[-1] - self._update_interval[0]) / len(self._update_interval))
+            try:
+                return 1 / ((self._update_interval[-1] - self._update_interval[0]) / len(self._update_interval))
+            except ZeroDivisionError:
+                return 0
         else:
             return 0
 
@@ -208,23 +215,53 @@ class SmartTopic:
         self._listener.subscribe(self._update)
 
 
-class ImageHandler:
+class ImageHandler(SmartTopic):
     """Processes /camera/image/compressed messages"""
 
-    def __init__(self, name=""):
-        self.name = name
+    def __init__(self, client, topic_name, disp_name=None, throttle_rate=0, auto_reconnect=True, allow_update=False):
+        super().__init__(client, topic_name, disp_name, throttle_rate, auto_reconnect, allow_update,
+                         compression="png")
         self.image = None
         self.timestamp = None
         self.has_changed = False
         self._last_image = None
 
-    def handle_image(self, message):
+        # Set the frame rate to 10 fps via the ros parameter server
+
+        # self.client.set_param("framerate", 10)
+
+    def connect(self):
+        print("Connecting to image topic")
+        super().connect()
+        self.client.set_param("/usb_cam/framerate", 1)
+
+    def _update(self, message):
         """Handle a message from the topic"""
-        self.timestamp = message["timestamp"]
+        # self.timestamp = message["timestamp"]
+        # dict_keys(['encoding', 'height', 'header', 'step', 'data', 'width', 'is_bigendian'])
+        print(message["encoding"])
         base64_bytes = message['data'].encode('ascii')
         image_bytes = base64.b64decode(base64_bytes)
-        self.image = Image.open(BytesIO(image_bytes))
+        if message["encoding"] == "rgb8":
+            # print("RGB8")
+            image = np.frombuffer(image_bytes, dtype=np.uint8).reshape((message["height"], message["width"], 3))
+            self.image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        elif message["encoding"] == "png":
+            # print("PNG")
+            self.image = Image.open(BytesIO(image_bytes))
+
+        self.has_data = True
         self.has_changed = True
+
+        # self.image = Image.open(BytesIO(image_bytes))
+        # self._lock.release()
+        # self.image = rgb
+
+        self._last_update = time.time()
+        self._update_interval.append(self._last_update)
+        if len(self._update_interval) > 10:
+            self._update_interval.pop(0)
+        # self.unsubscribe()
 
 
 # class State:

@@ -88,7 +88,12 @@ class PointCloud2UI(QWidget):
     def draw_lines(self, qp):
         """Draw lines inbetween each adjacent point"""
 
-        last_dot = self.dots[-1]  # Grab the last point in the list
+        # last_dot = self.dots[-1]  # Grab the last dot that is not red
+        for dot in self.dots:
+            if dot.styleSheet() == "background-color: transparent; color: red":
+                continue
+            last_dot = dot
+
 
         if not self.point_cloud_topic.has_data:
             qp.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.SolidLine))

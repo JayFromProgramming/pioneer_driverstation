@@ -10,6 +10,7 @@ from QT5_Classes.PointCloud2UI import PointCloud2UI
 from QT5_Classes.SignalUI import SignalUI
 from QT5_Classes.PioneerUI import PioneerUI
 from QT5_Classes.TopicStatusUI import TopicUI
+from QT5_Classes.WebcamUI import WebcamWindow
 from ROS.ROSInterface import ROSInterface
 from ROS.RobotState import RobotState
 
@@ -38,9 +39,9 @@ class DriverStationUI:
         self.connection_ui = ConnectionUI(self.robot, self.window)
         self.pioneer_ui = PioneerUI(self.robot, parent=self.window)
         self.cannon_ui = CannonUI(self.robot, parent=self.window)
-        # self.webcam = WebcamWindow(self.robot, self.window)
         self.signal_info = SignalUI(self.robot, self.window)
         self.topic_info = TopicUI(self.robot, self.window)
+        # self.webcam = WebcamWindow(self.robot, self.window)
         self.sonar_view = PointCloud2UI(self.robot, parent=self.window)
 
         # Move the pioneer UI to the bottom left
@@ -51,6 +52,7 @@ class DriverStationUI:
         # self.webcam.move(640, 0)
         self.sonar_view.move(640, 0)
         # Move the signal info to the bottom right
+        # self.signal_info.move(self.window.width() - self.signal_info.width(), 20 + self.webcam.height())
         self.signal_info.move(self.window.width() - self.signal_info.width(), 20 + self.sonar_view.height())
         # Move the topic UI to the left of the signal info
         self.topic_info.move(self.signal_info.x() - self.topic_info.width(), self.signal_info.y())
