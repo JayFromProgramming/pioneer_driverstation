@@ -65,9 +65,9 @@ class PointCloud2UI(QWidget):
                 # Values are in meters from the center of the robot, so we need to convert them to pixels
                 # Max range is 5 meters, so we need to scale the values to fit on the screen
                 # raw_x = point["y"] - 0.5 if point["y"] > 0 else point["y"] + 0.5
-                raw_y = point["x"] + 0.5 if point["x"] > 0 else point["x"] - 0.5
-                x = (round(-point["y"] * 30) + 320) - self.dot_x_offset
-                y = (round(-raw_y * 30) + 240) - self.dot_y_offset
+                raw_y = point["x"] + 0.2 if point["x"] > 0 else point["x"] - 0.2
+                x = (round(-point["y"] * 40) + 320) - self.dot_x_offset
+                y = (round(-raw_y * 40) + 240) - self.dot_y_offset
 
                 # calculate the distance from the center of the robot
                 distance = np.sqrt(point["x"] ** 2 + point["y"] ** 2)
@@ -99,6 +99,11 @@ class PointCloud2UI(QWidget):
 
         for dot in self.dots:
             # Draw a line from the last dot to the current dot
+
+            # If the dot is red, don't draw a line
+            if dot.styleSheet() == "background-color: transparent; color: red":
+                continue
+
             start_x = last_dot.x() + self.dot_x_offset
             start_y = last_dot.y() + self.dot_y_offset
             end_x = dot.x() + self.dot_x_offset
