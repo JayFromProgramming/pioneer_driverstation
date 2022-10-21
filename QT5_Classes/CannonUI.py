@@ -286,9 +286,9 @@ class CannonUI(QWidget):
         self.tank2 = AirTankElement("Tank 2", 100, 0, 0, "PSI", parent=self, robot=self.robot,
                                     tank_topic="cannon_tank_1")
 
-        self.tank1.move(35, 0)
+        self.tank1.move(60, 0)
 
-        self.tank2.move(35, 130)
+        self.tank2.move(60, 130)
 
     def set(self, tank1_pressure, tank2_pressure):
         self.tank1.set(tank1_pressure)

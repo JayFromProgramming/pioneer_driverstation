@@ -73,6 +73,8 @@ class PointCloud2UI(QWidget):
                 distance = np.sqrt(point["x"] ** 2 + point["y"] ** 2)
                 if distance > 5:
                     self.dots[dot_num].setStyleSheet("background-color: transparent; color: red")
+                elif distance < 1:
+                    self.dots[dot_num].setStyleSheet("background-color: transparent; color: darkorange")
                 else:
                     self.dots[dot_num].setStyleSheet("background-color: transparent; color: green")
 
@@ -107,6 +109,9 @@ class PointCloud2UI(QWidget):
             # If the dot is red, don't draw a line
             if dot.styleSheet() == "background-color: transparent; color: red":
                 continue
+            # elif dot.styleSheet() == "background-color: transparent; color: darkorange"\
+            #         and last_dot.styleSheet() == "background-color: transparent; color: darkorange":
+            #     qp.setPen(QtGui.QPen(QtCore.Qt.darkYellow, 1, QtCore.Qt.SolidLine))
 
             start_x = last_dot.x() + self.dot_x_offset
             start_y = last_dot.y() + self.dot_y_offset
