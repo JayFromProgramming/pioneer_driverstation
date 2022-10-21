@@ -94,7 +94,6 @@ class PointCloud2UI(QWidget):
                 continue
             last_dot = dot
 
-
         if not self.point_cloud_topic.has_data:
             qp.setPen(QtGui.QPen(QtCore.Qt.red, 1, QtCore.Qt.SolidLine))
         elif self.point_cloud_topic._last_update < time.time() - 5 or not self.point_cloud_topic._listener.is_subscribed:
