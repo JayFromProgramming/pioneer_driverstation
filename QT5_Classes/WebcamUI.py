@@ -8,7 +8,10 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
+from PyQt5.QtQuick import QQuickItem
 from PyQt5.QtWidgets import QWidget, QLabel, QOpenGLWidget
+
+from QT5_Classes.WebcamTest import NetworkMJPGImage
 
 
 class WebcamWindow(QWidget):
@@ -26,13 +29,8 @@ class WebcamWindow(QWidget):
             self.image_label.resize(640, 480)
             self.image_label.move(0, 0)
 
-            self.video_stream = QMediaPlayer(self, QMediaPlayer.VideoSurface)
-
-            self.video_player = QVideoWidget(self)
-            self.video_player.resize(640, 480)
-            self.video_player.move(0, 0)
-            self.video_stream.error.connect(self.handleError)
-            self.video_stream.setVideoOutput(self.video_player)
+            # self.quick_item = QQuickItem()
+            self.streamer = NetworkMJPGImage()
 
             self.info_label = QLabel(self)
             self.info_label.setStyleSheet("QLabel { background-color : black; color : white; }")
@@ -40,8 +38,6 @@ class WebcamWindow(QWidget):
             self.info_label.move(0, 460)
 
             self.robot.hook_on_ready(self.on_ready)
-
-            self.video_player.show()
 
             # Start timer
             # self.timer = QtCore.QTimer()
@@ -54,24 +50,15 @@ class WebcamWindow(QWidget):
         # Set teh video widget address
         ip = self.robot.address
         # print(f"{self.video_stream.state()}")
+        # The stream is of type mjpeg
         net_resource = QtCore.QUrl(f"http://{ip}:8080")
-        print(f"Setting video stream to {net_resource}")
-        media_content = QMediaContent(net_resource)
-        print(f"Media content: {media_content}")
-        print(f"Media: {self.video_stream.isVideoAvailable()}")
-        self.video_stream.setMedia(media_content)
-        # print(f"{self.video_stream.state()}")
-        self.video_stream.play()
-        # print(f"{self.video_stream.state()}")
+        self.streamer.setSourceURL(net_resource)
+        self.streamer.start()
+        logging.info(f"Webcam stream started")
 
-        print("Playing video")
-
-    def closeEvent(self, event):
-        self.robot.stop()
-        event.accept()
-
-    def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
-        self.info_label.setText(f"Webcam: {self.robot.address}; {self.video_stream.state()}")
-
-    def handleError(self):
-        print(self.video_stream.errorString())
+    def paintEvent(self, event):
+        try:
+            painter = QtGui.QPainter(self)
+            self.streamer.paint(painter)
+        except Exception as e:
+            logging.error(f"Error in paintEvent: {e}")

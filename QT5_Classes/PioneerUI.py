@@ -201,7 +201,7 @@ class PioneerUI(QWidget):
             if pose.value is not None:
                 for_vel, rot_vel = self.calculate_velocity(pose.value)
                 if for_vel is None:
-                    self.velocity.setStyleSheet("color: darkorange")
+                    # self.velocity.setStyleSheet("color: darkorange")
                     for_vel = self.last_vel[0]
                     rot_vel = self.last_vel[1]
                 else:
