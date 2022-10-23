@@ -115,9 +115,11 @@ class AirTankElement(QWidget):
         self.tank_name = tank_name
 
         set_pressure_topic = robot.get_state(f"cannon_{cannon_number}_target_pressure")
-        get_pressure_topic = robot.get_state(f"cannon_{cannon_number}_pressure")
+        # get_pressure_topic = robot.get_state(f"cannon_{cannon_number}_pressure")
+        get_pressure_topic = robot.get_state(f"cannon_{cannon_number}_state")
         set_state_topic = robot.get_state(f"cannon_{cannon_number}_set_state")
-        get_state_topic = robot.get_state(f"cannon_{cannon_number}_state")
+        # get_state_topic = robot.get_state(f"cannon_{cannon_number}_state")
+        get_state_topic = robot.get_state(f"cannon_{cannon_number}_pressure")
         get_auto_topic = robot.get_state(f"cannon_{cannon_number}_auto")
 
         self.combined_topic = CannonCombinedTopic(set_pressure_topic, get_pressure_topic,
@@ -136,7 +138,7 @@ class AirTankElement(QWidget):
         # Instantiate the UI graphics
         self.tank_box = QLabel(self)
         self.tank_box.setFixedSize(500, 60)
-        self.tank_box.setStyleSheet("background-color: white; border: 2px solid black")
+        self.tank_box.setStyleSheet("background-color: grey; border: 2px solid black")
 
         self.tank_pressure_bar = QLabel(self.tank_box)
         self.tank_pressure_bar.setFixedSize(500, 60)
@@ -144,6 +146,8 @@ class AirTankElement(QWidget):
 
         # Setup the tank pressure text (in the center of the tank graphic)
         self.tank_pressure_text = QLabel("Unknown", parent=self.tank_box)
+        self.tank_pressure_text.setFixedSize(150, 30)
+        self.tank_pressure_text.setAlignment(QtCore.Qt.AlignCenter)
 
         # self.tank_pressure_text.setFixedSize(500, 60)
         self.tank_pressure_text.setStyleSheet("color: black; background-color: transparent; border: 0px;"
@@ -191,6 +195,7 @@ class AirTankElement(QWidget):
 
         # Instantiate the UI text
         self.tank_name_label = QLabel(f"{self.tank_name}: {self.status}", parent=self)
+        self.tank_name_label.setFixedSize(500, 30)
         # self.tank_name_label.setAlignment(
         self.tank_name_label.setStyleSheet("color: black; background-color: transparent; border: 0px;"
                                            "font-size: 20px; font-weight: bold")
@@ -227,10 +232,7 @@ class AirTankElement(QWidget):
         self.pressure_set_button.setStyleSheet("background-color: grey; font-size: 15px;")
 
     def set(self, state):
-        value = state.value
-        self.fault = value["fault"]
-        self.tank_pressure = value["pressure"]
-        self.pressure_percent = (self.tank_pressure - self.tank_min_pressure) / (self.tank_max_pressure - self.tank_min_pressure)
+
         self.repaint()
 
     def update_loop(self):
@@ -238,6 +240,8 @@ class AirTankElement(QWidget):
             if self.robot is not None:
                 if self.robot.is_connected:
                     self.status = self.combined_topic.get_state()
+                    self.tank_pressure = self.combined_topic.get_pressure()
+                    self.pressure_percent = (self.tank_pressure - self.tank_min_pressure) / (self.tank_max_pressure - self.tank_min_pressure)
                 else:
                     self.fault = True
                     self.status = "No ROS"
@@ -254,12 +258,17 @@ class AirTankElement(QWidget):
 
         self.tank_name_label.setText(f"{self.tank_name}: {self.status}")
 
-        if self.fault:
+        if self.robot is not None:
+            if self.robot.is_connected:
+                self.tank_pressure_bar.setStyleSheet("background-color: green")
+                self.tank_pressure_bar.setFixedSize(int(500 * self.pressure_percent), 60)
+                self.tank_pressure_text.setText(f"{self.tank_pressure:.2f}{self.tank_pressure_unit}")
+            else:
+                self.tank_pressure_bar.setStyleSheet("background-color: red")
+                self.tank_pressure_bar.setFixedSize(500, 60)
+        else:
             self.tank_pressure_bar.setStyleSheet("background-color: red")
             self.tank_pressure_bar.setFixedSize(500, 60)
-        else:
-            self.tank_pressure_bar.setStyleSheet("background-color: green")
-            self.tank_pressure_bar.setFixedSize(500 * self.pressure_percent, 60)
 
     @pyqtSlot()
     def on_arm_button_clicked(self):
@@ -316,10 +325,23 @@ class CannonUI(QWidget):
         self.parent = parent
         self.robot = robot
 
-        self.tank1 = AirTankElement("Tank 1", 100, 0, 0, "PSI", parent=self, robot=self.robot,
+        self.surface_label = QLabel(parent=self)
+        self.surface_label.setFixedSize(700, 440)
+
+        self.tank1 = AirTankElement("Tank 1", 100, 0, 0, "PSI", parent=self.surface_label, robot=self.robot,
                                     cannon_number=0)
-        self.tank2 = AirTankElement("Tank 2", 100, 0, 0, "PSI", parent=self, robot=self.robot,
+        self.tank2 = AirTankElement("Tank 2", 100, 0, 0, "PSI", parent=self.surface_label, robot=self.robot,
                                     cannon_number=1)
+
+        self.clear_estop_button = QPushButton("Clear\nE-Stop", parent=self)
+        self.clear_estop_button.setFixedSize(75, 50)
+        self.clear_estop_button.move(20, 390)
+        self.fire_button = QPushButton("FIRE", parent=self)
+        self.fire_button.setStyleSheet("background-color: red; font-size: 30px;")
+        self.fire_button.setFixedSize(75, 50)
+        self.fire_button.move(20, 330)
+        self.clear_estop_button.clicked.connect(self.on_clear_estop_button_clicked)
+        self.fire_button.clicked.connect(self.on_fire_button_clicked)
 
         self.solenoid_topic = self.robot.robot_state_monitor.get_state("solenoids")
         self.solenoids = {
@@ -334,6 +356,7 @@ class CannonUI(QWidget):
         self.tank1.move(60, 0)
 
         self.tank2.move(60, 130)
+        self.surface_label.move(0, 0)
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_loop)
@@ -351,41 +374,45 @@ class CannonUI(QWidget):
             self.solenoids["fill"] = (raw_solenoids & 0b00000001) > 0
             self.solenoids["vent"] = (raw_solenoids & 0b00000010) > 0
             self.solenoids["cannon_1_fill"] = (raw_solenoids & 0b00000100) > 0
-            self.solenoids["cannon_1_shot"] = (raw_solenoids & 0b00001000) > 0
-            self.solenoids["cannon_2_fill"] = (raw_solenoids & 0b00010000) > 0
+            self.solenoids["cannon_2_fill"] = (raw_solenoids & 0b00001000) > 0
+            self.solenoids["cannon_1_shot"] = (raw_solenoids & 0b00010000) > 0
             self.solenoids["cannon_2_shot"] = (raw_solenoids & 0b00100000) > 0
 
         except Exception as e:
             logging.error(f"{e} {traceback.format_exc()}")
 
     def paintEvent(self, event):
-        super().paintEvent(event)
+        # super().paintEvent(event)
 
         try:
-            qp = QPainter(self)
-            qp.setPen(QPen(QtCore.Qt.black, 2, QtCore.Qt.SolidLine))
+            self.surface_label.clear()
+            qp = QPainter()
             qp.begin(self)
+            qp.setPen(QPen(QtCore.Qt.black, 2, QtCore.Qt.SolidLine))
 
             # Draw the supply solenoid
             if self.solenoids["fill"]:
                 qp.setBrush(QColor(0, 255, 0))
             else:
                 qp.setBrush(QColor(255, 0, 0))
-            qp.drawRect(QRect(QPoint(60, 260), QSize(20, 20)))
+            fill = QRect(QPoint(160, 290), QSize(20, 20))
+            qp.drawRect(fill)
 
             # Draw the vent solenoid
             if self.solenoids["vent"]:
                 qp.setBrush(QColor(0, 255, 0))
             else:
                 qp.setBrush(QColor(255, 0, 0))
-            qp.drawRect(QRect(QPoint(60, 290), QSize(20, 20)))
+            vent = QRect(QPoint(20, 290), QSize(20, 20))
+            qp.drawRect(vent)
 
             # Draw the cannon 1 fill solenoid
             if self.solenoids["cannon_1_fill"]:
                 qp.setBrush(QColor(0, 255, 0))
             else:
                 qp.setBrush(QColor(255, 0, 0))
-            qp.drawRect(QRect(QPoint(self.tank1.x() - 15, self.tank1.y() + 45), QSize(20, 20)))
+            fill_1 = QRect(QPoint(self.tank1.x() - 15, self.tank1.y() + 45), QSize(20, 20))
+            qp.drawRect(fill_1)
 
             # Draw the cannon 1 shot solenoid
             if self.solenoids["cannon_1_shot"]:
@@ -399,7 +426,8 @@ class CannonUI(QWidget):
                 qp.setBrush(QColor(0, 255, 0))
             else:
                 qp.setBrush(QColor(255, 0, 0))
-            qp.drawRect(QRect(QPoint(self.tank2.x() - 15, self.tank2.y() + 45), QSize(20, 20)))
+            fill_2 = QRect(QPoint(self.tank2.x() - 15, self.tank2.y() + 45), QSize(20, 20))
+            qp.drawRect(fill_2)
 
             # Draw the cannon 2 shot solenoid
             if self.solenoids["cannon_2_shot"]:
@@ -408,6 +436,33 @@ class CannonUI(QWidget):
                 qp.setBrush(QColor(255, 0, 0))
             qp.drawRect(QRect(QPoint(self.tank2.x() + self.tank2.width() + 5, self.tank2.y() + 45), QSize(20, 20)))
 
+            # Draw the lines between the fill solenoids and the main vent and fill solenoids, no diagonals or crossing lines
+
+            qp.drawLine(QPoint(fill_1.x(), fill_1.y() + 10), QPoint(fill_1.x() - 25, fill_1.y() + 10))
+            qp.drawLine(QPoint(fill_2.x(), fill_2.y() + 10), QPoint(fill_2.x() - 15, fill_2.y() + 10))
+            # Draw decending lines
+            qp.drawLine(QPoint(fill_1.x() - 25, fill_1.y() + 10), QPoint(fill_1.x() - 25, fill.y() - 15))
+            qp.drawLine(QPoint(fill_2.x() - 15, fill_2.y() + 10), QPoint(fill_2.x() - 15, fill.y() - 15))
+            # Draw crossing line for vent
+            qp.drawLine(QPoint(fill_1.x() - 25, fill.y() - 15), QPoint(fill.x() + 10, fill.y() - 15))
+            # Draw connecting line for fill
+            qp.drawLine(QPoint(vent.x() + 10, vent.y()), QPoint(vent.x() + 10, vent.y() - 15))
+            qp.drawLine(QPoint(fill.x() + 10, fill.y()), QPoint(fill.x() + 10, vent.y() - 15))
+
             qp.end()
+        except Exception as e:
+            logging.error(f"{e} {traceback.format_exc()}")
+
+    @pyqtSlot()
+    def on_clear_estop_button_clicked(self):
+        try:
+            self.robot.execute_service("/can/estop/clear", callback=lambda x: None)
+        except Exception as e:
+            logging.error(f"{e} {traceback.format_exc()}")
+
+    @pyqtSlot()
+    def on_fire_button_clicked(self):
+        try:
+            self.robot.execute_service("/can/fire", callback=lambda x: None)
         except Exception as e:
             logging.error(f"{e} {traceback.format_exc()}")

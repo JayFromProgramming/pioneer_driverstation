@@ -145,7 +145,7 @@ class SmartTopic:
                 # logging.error(f"Topic {self.topic_name} does not exist")
                 return
             if self.is_single and self.topic_type != "geometry_msgs/Twist":
-                # msg = roslibpy.Message({"data": updated_values})
+                msg = roslibpy.Message({"data": updated_values})
                 logging.debug(f"Publishing {updated_values} to {self.topic_name}")
             else:
                 # If the value is not a single value, but a list of values or a dictionary
@@ -381,16 +381,24 @@ class CannonCombinedTopic:
         self.get_auto_topic = get_auto_topic
 
     def set_pressure(self, pressure):
-        self.set_pressure_topic.publish(pressure)
+        try:
+            self.set_pressure_topic.value = pressure
+        except Exception as e:
+            logging.error(f"Error setting pressure: {e}")
 
     def get_pressure(self):
-        return self.get_pressure_topic.value
+        if self.get_pressure_topic.has_data:
+            return self.get_pressure_topic.value
+        else:
+            return 0
 
     def send_command(self, state: str):
         if not self.set_state_topic.exists:
             raise ValueError("Cannot send command as the topic does not exist")
-        if self.get_state_topic.value != self.action_enums["clear_input"]:
-            raise ValueError("Cannot set state while setting state")
+        if self.set_state_topic.value is None:
+            self.set_state_topic.value = self.action_enums["clear_input"]
+        if self.set_state_topic.value != self.action_enums["clear_input"]:
+            raise ValueError(f"Cannot set state while setting state, current state is {self.set_state_topic.value}")
         if state not in self.action_enums:
             raise ValueError(f"Invalid state: {state}")
         self.set_state_topic.value = self.action_enums[state]
@@ -399,9 +407,9 @@ class CannonCombinedTopic:
     def get_state(self):
         if self.get_state_topic.value is None:
             return "No data"
-        if self.get_state_topic.value not in self.state_enums:
-            raise ValueError(f"Unknown state: {self.get_state_topic.value}")
-        return self.state_enums[self.get_state_topic.value]
+        if self.get_state_topic.value not in self.state_enums.values():
+            return f"Unknown state: {self.get_state_topic.value}"
+        return list(self.state_enums.keys())[list(self.state_enums.values()).index(self.get_state_topic.value)]
 
     def get_auto(self):
         return self.get_auto_topic.value
