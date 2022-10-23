@@ -1,12 +1,14 @@
 import base64
 import logging
 import struct
+import subprocess
 import time
 import traceback
 
 import numpy as np
 
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
 
@@ -32,6 +34,8 @@ class PointCloud2UI(QWidget):
             self.label.paintEvent = self.labelPaintEvent
 
             self.toggle_button = QPushButton("Toggle Scan", self)
+            self.webcam_button = QPushButton("Open Webcam", self)
+            self.webcam_button.clicked.connect(self.open_webcam)
 
             self.dot_x_offset = 3
             self.dot_y_offset = 8
@@ -47,6 +51,7 @@ class PointCloud2UI(QWidget):
 
             self.toggle_button.clicked.connect(self.toggle)
             self.toggle_button.move(10, 471)
+            self.webcam_button.move(120, 471)
 
             # self.window.show()
 
@@ -56,6 +61,14 @@ class PointCloud2UI(QWidget):
             self.timer.start(100)
         except Exception as e:
             logging.error(f"Error in __init__: {e} {traceback.format_exc()}")
+
+    @pyqtSlot()
+    def open_webcam(self):
+        """Open an ffplay window"""
+        try:
+            subprocess.Popen(["ffplay", "-x", "480", "-y", "320", "-f", "mjpeg", f"http://{self.robot.address}:8080"])
+        except Exception as e:
+            logging.error(f"Error in open_webcam: {e} {traceback.format_exc()}")
 
     def process_cloud(self, cloud: list):
         try:

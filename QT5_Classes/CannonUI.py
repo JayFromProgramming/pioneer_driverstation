@@ -120,7 +120,8 @@ class AirTankElement(QWidget):
         get_state_topic = robot.get_state(f"cannon_{cannon_number}_state")
         get_auto_topic = robot.get_state(f"cannon_{cannon_number}_auto")
 
-        self.combined_topic = CannonCombinedTopic(set_pressure_topic, get_pressure_topic, set_state_topic, get_state_topic,
+        self.combined_topic = CannonCombinedTopic(set_pressure_topic, get_pressure_topic,
+                                                  set_state_topic, get_state_topic,
                                                   get_auto_topic)
 
         self.tank_max_pressure = tank_max_pressure

@@ -78,7 +78,7 @@ class PioneerSignalWidget(QWidget):
         # Setup the timer
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_info)
-        self.timer.start(1000)
+        self.timer.start(2000)
 
     def update_info(self):
         """Updates the info of the driver station's connection"""
@@ -187,7 +187,7 @@ class DriverStationSignalWidget(QWidget):
         # Start the timer to update the info
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_info)
-        self.timer.start(1000)
+        self.timer.start(2000)
 
     def update_info(self):
         try:

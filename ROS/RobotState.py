@@ -371,7 +371,9 @@ class CannonCombinedTopic:
         "idle": 7
     }
 
-    def __init__(self, set_pressure_topic, get_pressure_topic, set_state_topic, get_state_topic, get_auto_topic):
+    def __init__(self, set_pressure_topic, get_pressure_topic,
+                 set_state_topic, get_state_topic,
+                 get_auto_topic):
         self.set_pressure_topic = set_pressure_topic
         self.get_pressure_topic = get_pressure_topic
         self.set_state_topic = set_state_topic
@@ -395,6 +397,8 @@ class CannonCombinedTopic:
         self.set_state_topic.value = self.action_enums["clear_input"]
 
     def get_state(self):
+        if self.get_state_topic.value is None:
+            return "No data"
         if self.get_state_topic.value not in self.state_enums:
             raise ValueError(f"Unknown state: {self.get_state_topic.value}")
         return self.state_enums[self.get_state_topic.value]
