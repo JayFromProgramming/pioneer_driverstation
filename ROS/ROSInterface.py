@@ -5,7 +5,7 @@ import roslibpy
 import threading
 import logging
 
-from ROS.RobotState import RobotState, SmartTopic, ImageHandler
+from ROS.RobotState import RobotState, SmartTopic
 
 logging = logging.getLogger(__name__)
 
@@ -40,10 +40,12 @@ topic_targets = [
     SmartTopic("solenoids", "/pneumatics/solenoids"),
     SmartTopic("cannon_angle", "/cannon/angle", allow_update=True),
     # SmartTopic("diagnostics", "/diagnostics"),
-    SmartTopic("cannon_0_pressure", "/can0/set_pressure", allow_update=True, hidden=True),
-    SmartTopic("cannon_1_pressure", "/can1/set_pressure", allow_update=True, hidden=True),
+    SmartTopic("cannon_0_target_pressure", "/can0/set_pressure", allow_update=True, hidden=True),
+    SmartTopic("cannon_1_target_pressure", "/can1/set_pressure", allow_update=True, hidden=True),
     SmartTopic("cannon_0_set_state", "/can0/set_state", allow_update=True, hidden=True),
     SmartTopic("cannon_1_set_state", "/can1/set_state", allow_update=True, hidden=True),
+    SmartTopic("cannon_0_auto", "/can0/auto", hidden=True),
+    SmartTopic("cannon_1_auto", "/can1/auto", hidden=True),
     SmartTopic("cannon_0_state", "/can0/state"),
     SmartTopic("cannon_1_state", "/can1/state"),
     SmartTopic("cannon_0_pressure", "/can0/pressure"),

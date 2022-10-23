@@ -4,6 +4,7 @@ j.symlink = True
 
 j.add(package="nre_p3at", filename="launch/base.launch")
 j.add(package="rosbridge_server", filename="launch/rosbridge_websocket.launch")
+j.add(package="")
 j.add()
 
 j.install()

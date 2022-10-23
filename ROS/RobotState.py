@@ -214,54 +214,60 @@ class SmartTopic:
     def resubscribe(self):
         self._listener.subscribe(self._update)
 
+    def is_stale(self):
+        if self._last_update > time.time() - 5:
+            return False
+        else:
+            return True
 
-class ImageHandler(SmartTopic):
-    """Processes /camera/image/compressed messages"""
 
-    def __init__(self, client, topic_name, disp_name=None, throttle_rate=0, auto_reconnect=True, allow_update=False):
-        super().__init__(client, topic_name, disp_name, throttle_rate, auto_reconnect, allow_update,
-                         compression="png")
-        self.image = None
-        self.timestamp = None
-        self.has_changed = False
-        self._last_image = None
-
-        # Set the frame rate to 10 fps via the ros parameter server
-
-        # self.client.set_param("framerate", 10)
-
-    def connect(self):
-        print("Connecting to image topic")
-        super().connect()
-        self.client.set_param("/usb_cam/framerate", 1)
-
-    def _update(self, message):
-        """Handle a message from the topic"""
-        # self.timestamp = message["timestamp"]
-        # dict_keys(['encoding', 'height', 'header', 'step', 'data', 'width', 'is_bigendian'])
-        print(message["encoding"])
-        base64_bytes = message['data'].encode('ascii')
-        image_bytes = base64.b64decode(base64_bytes)
-        if message["encoding"] == "rgb8":
-            # print("RGB8")
-            image = np.frombuffer(image_bytes, dtype=np.uint8).reshape((message["height"], message["width"], 3))
-            self.image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        elif message["encoding"] == "png":
-            # print("PNG")
-            self.image = Image.open(BytesIO(image_bytes))
-
-        self.has_data = True
-        self.has_changed = True
-
-        # self.image = Image.open(BytesIO(image_bytes))
-        # self._lock.release()
-        # self.image = rgb
-
-        self._last_update = time.time()
-        self._update_interval.append(self._last_update)
-        if len(self._update_interval) > 10:
-            self._update_interval.pop(0)
-        # self.unsubscribe()
+# class ImageHandler(SmartTopic):
+#     """Processes /camera/image/compressed messages"""
+#
+#     def __init__(self, client, topic_name, disp_name=None, throttle_rate=0, auto_reconnect=True, allow_update=False):
+#         super().__init__(client, topic_name, disp_name, throttle_rate, auto_reconnect, allow_update,
+#                          compression="png")
+#         self.image = None
+#         self.timestamp = None
+#         self.has_changed = False
+#         self._last_image = None
+#
+#         # Set the frame rate to 10 fps via the ros parameter server
+#
+#         # self.client.set_param("framerate", 10)
+#
+#     def connect(self):
+#         print("Connecting to image topic")
+#         super().connect()
+#         self.client.set_param("/usb_cam/framerate", 1)
+#
+#     def _update(self, message):
+#         """Handle a message from the topic"""
+#         # self.timestamp = message["timestamp"]
+#         # dict_keys(['encoding', 'height', 'header', 'step', 'data', 'width', 'is_bigendian'])
+#         print(message["encoding"])
+#         base64_bytes = message['data'].encode('ascii')
+#         image_bytes = base64.b64decode(base64_bytes)
+#         if message["encoding"] == "rgb8":
+#             # print("RGB8")
+#             image = np.frombuffer(image_bytes, dtype=np.uint8).reshape((message["height"], message["width"], 3))
+#             self.image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+#         elif message["encoding"] == "png":
+#             # print("PNG")
+#             self.image = Image.open(BytesIO(image_bytes))
+#
+#         self.has_data = True
+#         self.has_changed = True
+#
+#         # self.image = Image.open(BytesIO(image_bytes))
+#         # self._lock.release()
+#         # self.image = rgb
+#
+#         self._last_update = time.time()
+#         self._update_interval.append(self._last_update)
+#         if len(self._update_interval) > 10:
+#             self._update_interval.pop(0)
+#         # self.unsubscribe()
 
 
 # class State:
@@ -340,6 +346,73 @@ class ImageHandler(SmartTopic):
 #
 #     def __repr__(self):
 #         return f"State: {self.name} = {self.value}"
+
+class CannonCombinedTopic:
+    state_enums = {
+        "UNKNOWN": 0,
+        "Emergency Stopped": 254,
+        "Idle": 1,
+        "Waiting for pressure": 2,
+        "Pressurizing": 3,
+        "Venting": 4,
+        "Ready": 5,
+        "Armed": 6,
+        "Firing": 7
+    }
+
+    action_enums = {
+        "clear_input": 0,
+        "vent": 1,
+        "set_auto": 2,
+        "disable_auto": 3,
+        "fill": 4,
+        "arm": 5,
+        "disarm": 6,
+        "idle": 7
+    }
+
+    def __init__(self, set_pressure_topic, get_pressure_topic, set_state_topic, get_state_topic, get_auto_topic):
+        self.set_pressure_topic = set_pressure_topic
+        self.get_pressure_topic = get_pressure_topic
+        self.set_state_topic = set_state_topic
+        self.get_state_topic = get_state_topic
+        self.get_auto_topic = get_auto_topic
+
+    def set_pressure(self, pressure):
+        self.set_pressure_topic.publish(pressure)
+
+    def get_pressure(self):
+        return self.get_pressure_topic.value
+
+    def send_command(self, state: str):
+        if not self.set_state_topic.exists:
+            raise ValueError("Cannot send command as the topic does not exist")
+        if self.get_state_topic.value != self.action_enums["clear_input"]:
+            raise ValueError("Cannot set state while setting state")
+        if state not in self.action_enums:
+            raise ValueError(f"Invalid state: {state}")
+        self.set_state_topic.value = self.action_enums[state]
+        self.set_state_topic.value = self.action_enums["clear_input"]
+
+    def get_state(self):
+        if self.get_state_topic.value not in self.state_enums:
+            raise ValueError(f"Unknown state: {self.get_state_topic.value}")
+        return self.state_enums[self.get_state_topic.value]
+
+    def get_auto(self):
+        return self.get_auto_topic.value
+
+    def is_stale(self):
+        for topic in [self.get_pressure_topic, self.get_state_topic, self.get_auto_topic]:
+            if topic.is_stale():
+                return True
+        return False
+
+    def has_data(self):
+        for topic in [self.get_pressure_topic, self.get_state_topic, self.get_auto_topic]:
+            if not topic.has_data:
+                return False
+        return True
 
 
 class RobotState:
