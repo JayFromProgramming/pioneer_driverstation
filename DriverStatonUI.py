@@ -54,8 +54,11 @@ class DriverStationUI:
         # Move the signal info to the bottom right
         # self.signal_info.move(self.window.width() - self.signal_info.width(), 20 + self.webcam.height())
         self.signal_info.move(self.window.width() - self.signal_info.width(), 20 + self.sonar_view.height())
+
         # Move the topic UI to the left of the signal info
         self.topic_info.move(self.signal_info.x() - self.topic_info.width(), self.signal_info.y())
+        # self.topic_info.move(self.window.width() - self.topic_info.width(), 20 + self.sonar_view.height())
+
         # Move the connection UI to left of the topic UI
         self.connection_ui.move(self.topic_info.x() - self.connection_ui.width(), self.topic_info.y())
 

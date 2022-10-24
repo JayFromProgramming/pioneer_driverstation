@@ -37,17 +37,19 @@ class PointCloud2UI(QOpenGLWidget):
             self.webcam_button = QPushButton("Open Webcam", self)
             self.webcam_button.clicked.connect(self.open_webcam)
 
-            self.dot_x_offset = 3
-            self.dot_y_offset = 8
+            self.dot_x_offset = 2
+            # self.dot_x_offset = 0
+            self.dot_y_offset = 2
+            # self.dot_y_offset = 0
 
             # Create a 2D array to store the point cloud
             self.dots = []
             for i in range(16):
-                dot = QLabel("•", parent=self)
+                self.dots.append((320, 240, 0))
                 # self.dot.setFixedSize(5, 5)
-                dot.setStyleSheet("background-color: transparent; color: green")
-                dot.move(320 - self.dot_x_offset, 240 - self.dot_y_offset)
-                self.dots.append(dot)
+                # dot.setStyleSheet("background-color: transparent; color: green")
+                # dot.move(320 - self.dot_x_offset, 240 - self.dot_y_offset)
+                # self.dots.append(dot)
 
             self.toggle_button.clicked.connect(self.toggle)
             self.toggle_button.move(10, 471)
@@ -85,16 +87,19 @@ class PointCloud2UI(QOpenGLWidget):
                 # calculate the distance from the center of the robot
                 distance = np.sqrt(point["x"] ** 2 + point["y"] ** 2)
                 if distance > 5:
-                    self.dots[dot_num].setStyleSheet("background-color: transparent; color: red")
+                    self.dots[dot_num] = (x, y, 0)
+                    # self.dots[dot_num].setStyleSheet("background-color: transparent; color: red")
                 elif distance < 1:
-                    self.dots[dot_num].setStyleSheet("background-color: transparent; color: darkorange")
+                    self.dots[dot_num] = (x, y, 2)
+                    # self.dots[dot_num].setStyleSheet("background-color: transparent; color: darkorange")
                 else:
-                    self.dots[dot_num].setStyleSheet("background-color: transparent; color: green")
+                    self.dots[dot_num] = (x, y, 1)
+                    # self.dots[dot_num].setStyleSheet("background-color: transparent; color: green")
 
-                dot = self.dots[dot_num]
+                # dot = self.dots[dot_num]
 
                 # Move the dot to the correct location
-                dot.move(x, y)
+                # dot.move(x, y)
                 dot_num += 1
 
         except Exception as e:
@@ -103,9 +108,21 @@ class PointCloud2UI(QOpenGLWidget):
     def draw_lines(self, qp):
         """Draw lines inbetween each adjacent point"""
 
+        for dot in self.dots:
+            if dot[2] == 0:
+                qp.setBrush(QtGui.QColor(255, 0, 0))
+            elif dot[2] == 1:
+                qp.setBrush(QtGui.QColor(0, 255, 0))
+            elif dot[2] == 2:
+                qp.setBrush(QtGui.QColor(255, 165, 0))
+            qp.drawEllipse(dot[0], dot[1], 5, 5)
+            # Fill the dot with the correct color
+
         # last_dot = self.dots[-1]  # Grab the last dot that is not red
         for dot in self.dots:
-            if dot.styleSheet() == "background-color: transparent; color: red":
+            # if dot.styleSheet() == "background-color: transparent; color: red":
+            #     continue
+            if dot[2] == 0:
                 continue
             last_dot = dot
 
@@ -120,16 +137,18 @@ class PointCloud2UI(QOpenGLWidget):
             # Draw a line from the last dot to the current dot
 
             # If the dot is red, don't draw a line
-            if dot.styleSheet() == "background-color: transparent; color: red":
+            # if dot.styleSheet() == "background-color: transparent; color: red":
+            #     continue
+            if dot[2] == 0:
                 continue
             # elif dot.styleSheet() == "background-color: transparent; color: darkorange"\
             #         and last_dot.styleSheet() == "background-color: transparent; color: darkorange":
             #     qp.setPen(QtGui.QPen(QtCore.Qt.darkYellow, 1, QtCore.Qt.SolidLine))
 
-            start_x = last_dot.x() + self.dot_x_offset
-            start_y = last_dot.y() + self.dot_y_offset
-            end_x = dot.x() + self.dot_x_offset
-            end_y = dot.y() + self.dot_y_offset
+            start_x = last_dot[0] + self.dot_x_offset
+            start_y = last_dot[1] + self.dot_y_offset
+            end_x = dot[0] + self.dot_x_offset
+            end_y = dot[1] + self.dot_y_offset
             qp.drawLine(start_x, start_y, end_x, end_y)
             last_dot = dot
 

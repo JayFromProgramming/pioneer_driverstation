@@ -166,12 +166,12 @@ class AirTankElement(QWidget):
 
         self.fill_button = QPushButton("FILL", parent=self)
         self.fill_button.setFixedSize(50, 30)
-        self.fill_button.setCheckable(True)  # Make the button toggleable
+        # self.fill_button.setCheckable(True)  # Make the button toggleable
         self.fill_button.clicked.connect(self.on_fill_button_clicked)
 
         self.vent_button = QPushButton("VENT", parent=self)
         self.vent_button.setFixedSize(60, 30)
-        self.vent_button.setCheckable(True)  # Make the button toggleable
+        # self.vent_button.setCheckable(True)  # Make the button toggleable
         self.vent_button.clicked.connect(self.on_vent_button_clicked)
 
         self.pressure_set_input = QLineEdit(parent=self)
@@ -185,7 +185,7 @@ class AirTankElement(QWidget):
 
         self.arm_button = QPushButton("ARM", parent=self)
         self.arm_button.setFixedSize(50, 30)
-        self.arm_button.setCheckable(True)  # Make the button toggleable
+        # self.arm_button.setCheckable(True)  # Make the button toggleable
         self.arm_button.clicked.connect(self.on_arm_button_clicked)
 
         # Setup the in-flow and out-flow solenoid graphics
@@ -224,16 +224,11 @@ class AirTankElement(QWidget):
         self.timer.start(150)
 
     def set_style_sheets(self):
-
         self.auto_button.setStyleSheet("background-color: grey; font-size: 15px;")
         self.fill_button.setStyleSheet("background-color: grey; font-size: 15px;")
         self.vent_button.setStyleSheet("background-color: grey; font-size: 15px;")
         self.arm_button.setStyleSheet("background-color: grey; font-size: 15px;")
         self.pressure_set_button.setStyleSheet("background-color: grey; font-size: 15px;")
-
-    def set(self, state):
-
-        self.repaint()
 
     def update_loop(self):
         try:
@@ -242,6 +237,7 @@ class AirTankElement(QWidget):
                     self.status = self.combined_topic.get_state()
                     self.tank_pressure = self.combined_topic.get_pressure()
                     self.pressure_percent = (self.tank_pressure - self.tank_min_pressure) / (self.tank_max_pressure - self.tank_min_pressure)
+                    self.auto_button.setChecked(self.combined_topic.get_auto())
                 else:
                     self.fault = True
                     self.status = "No ROS"
@@ -366,9 +362,9 @@ class CannonUI(QWidget):
         self.timer.timeout.connect(self.update_loop)
         self.timer.start(150)
 
-    def set(self, tank1_pressure, tank2_pressure):
-        self.tank1.set(tank1_pressure)
-        self.tank2.set(tank2_pressure)
+    # def set(self, tank1_pressure, tank2_pressure):
+    #     self.tank1.set(tank1_pressure)
+    #     self.tank2.set(tank2_pressure)
 
     def update_loop(self):
         try:

@@ -417,7 +417,7 @@ class CannonCombinedTopic:
         return list(self.state_enums.keys())[list(self.state_enums.values()).index(self.get_state_topic.value)]
 
     def get_auto(self):
-        return self.get_auto_topic.value
+        return self.get_auto_topic.value if self.get_auto_topic.has_data else False
 
     def is_stale(self):
         for topic in [self.get_pressure_topic, self.get_state_topic, self.get_auto_topic]:
