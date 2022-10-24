@@ -352,6 +352,10 @@ class CannonUI(QWidget):
             "cannon_2_fill": False,
             "cannon_2_shot": False
         }
+        self.vent_solenoid_label = QLabel("Vent", parent=self)
+        self.vent_solenoid_label.move(45, 290)
+        self.fill_solenoind_label = QLabel("Fill", parent=self)
+        self.fill_solenoind_label.move(185, 290)
 
         self.tank1.move(60, 0)
 
@@ -450,6 +454,7 @@ class CannonUI(QWidget):
             qp.drawLine(QPoint(fill.x() + 10, fill.y()), QPoint(fill.x() + 10, vent.y() - 15))
 
             qp.end()
+
         except Exception as e:
             logging.error(f"{e} {traceback.format_exc()}")
 

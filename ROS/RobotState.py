@@ -397,12 +397,17 @@ class CannonCombinedTopic:
             raise ValueError("Cannot send command as the topic does not exist")
         if self.set_state_topic.value is None:
             self.set_state_topic.value = self.action_enums["clear_input"]
+            self.set_state_topic.value = self.action_enums[state]
+            self.set_state_topic.value = self.action_enums["clear_input"]
+            return
         if self.set_state_topic.value != self.action_enums["clear_input"]:
             raise ValueError(f"Cannot set state while setting state, current state is {self.set_state_topic.value}")
         if state not in self.action_enums:
             raise ValueError(f"Invalid state: {state}")
         self.set_state_topic.value = self.action_enums[state]
-        self.set_state_topic.value = self.action_enums["clear_input"]
+        for _ in range(4):
+            self.set_state_topic.value = self.action_enums["clear_input"]
+            time.sleep(0.05)
 
     def get_state(self):
         if self.get_state_topic.value is None:

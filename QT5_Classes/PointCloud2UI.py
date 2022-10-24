@@ -10,12 +10,12 @@ import numpy as np
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QOpenGLWidget
 
 logging = logging.getLogger(__name__)
 
 
-class PointCloud2UI(QWidget):
+class PointCloud2UI(QOpenGLWidget):
 
     def __init__(self, robot, parent=None):
         super().__init__()
@@ -27,11 +27,11 @@ class PointCloud2UI(QWidget):
             self.point_cloud_topic = self.robot.robot_state_monitor.state_watcher.state("sonar")
 
             # self.window = QWidget()
-            self.label = QLabel(self)
-            self.label.setFixedSize(640, 470)
-            self.label.setStyleSheet("background-color: black")
+            # self.label = QLabel(self)
+            # self.label.setFixedSize(640, 470)
+            # self.label.setStyleSheet("background-color: black")
             # Add a paint event to the label
-            self.label.paintEvent = self.labelPaintEvent
+            # self.label.paintEvent = self.labelPaintEvent
 
             self.toggle_button = QPushButton("Toggle Scan", self)
             self.webcam_button = QPushButton("Open Webcam", self)
@@ -43,7 +43,7 @@ class PointCloud2UI(QWidget):
             # Create a 2D array to store the point cloud
             self.dots = []
             for i in range(16):
-                dot = QLabel("•", parent=self.label)
+                dot = QLabel("•", parent=self)
                 # self.dot.setFixedSize(5, 5)
                 dot.setStyleSheet("background-color: transparent; color: green")
                 dot.move(320 - self.dot_x_offset, 240 - self.dot_y_offset)
@@ -154,20 +154,22 @@ class PointCloud2UI(QWidget):
         try:
             if self.point_cloud_topic is None or not self.point_cloud_topic.has_data:
                 return
-
             # print(self.point_cloud_topic.value["points"])
             self.process_cloud(self.point_cloud_topic.value["points"])
-
         except Exception as e:
             logging.error(f"Error in render_2d_point_cloud: {e} {traceback.format_exc()}")
+        else:
+            super().update()
 
-    def labelPaintEvent(self, event) -> None:
+    def paintGL(self) -> None:
         try:
             # Clear the previous image
-            self.label.clear()
+            # self.label.clear()
             qp = QtGui.QPainter()
-            qp.begin(self.label)
+            qp.begin(self)
             self.draw_lines(qp)
             qp.end()
         except Exception as e:
             logging.error(f"Error in paintEvent: {e} {traceback.format_exc()}")
+        # else:
+        #     print("Painted")

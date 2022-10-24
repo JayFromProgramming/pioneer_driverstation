@@ -161,8 +161,9 @@ class ROSInterface:
     def terminate(self):
         logging.info("Terminating ROSInterface")
         self.robot_state_monitor.unsub_all()
-        self.client.terminate()
-        del self.client
+        if self.client is not None:
+            self.client.terminate()
+            del self.client
         self.client = None
         # self.robot_state_monitor.set_client(self.client)
 
