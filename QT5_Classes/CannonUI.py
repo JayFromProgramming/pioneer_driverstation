@@ -238,6 +238,10 @@ class AirTankElement(QWidget):
                     self.tank_pressure = self.combined_topic.get_pressure()
                     self.pressure_percent = (self.tank_pressure - self.tank_min_pressure) / (self.tank_max_pressure - self.tank_min_pressure)
                     self.auto_button.setChecked(self.combined_topic.get_auto())
+                    if self.combined_topic.get_state() == "Armed":
+                        self.arm_button.setChecked(True)
+                    else:
+                        self.arm_button.setChecked(False)
                 else:
                     self.fault = True
                     self.status = "No ROS"
@@ -270,8 +274,10 @@ class AirTankElement(QWidget):
     def on_arm_button_clicked(self):
         if self.arm_button.isChecked():
             self.arm_button.setStyleSheet("background-color: green; font-size: 15px;")
+            self.combined_topic.send_command("disarm")
         else:
             self.arm_button.setStyleSheet("background-color: grey; font-size: 15px;")
+            self.combined_topic.send_command("arm")
 
     @pyqtSlot()
     def on_auto_button_clicked(self):
@@ -288,7 +294,7 @@ class AirTankElement(QWidget):
     def on_fill_button_clicked(self):
         # Deselect the other buttons as they are mutually exclusive
         try:
-            if self.fill_button.isChecked():
+            if self.combined_topic.get_state() == "Idle":
                 self.combined_topic.send_command("fill")
             else:
                 self.combined_topic.send_command("idle")
@@ -299,10 +305,7 @@ class AirTankElement(QWidget):
     def on_vent_button_clicked(self):
         # Deselect the other buttons as they are mutually exclusive
         try:
-            if self.vent_button.isChecked():
-                self.combined_topic.send_command("vent")
-            else:
-                self.combined_topic.send_command("idle")
+            self.combined_topic.send_command("vent")
         except Exception as e:
             logging.error(f"{e}")
 
