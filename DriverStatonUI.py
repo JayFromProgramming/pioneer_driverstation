@@ -64,6 +64,9 @@ class DriverStationUI:
 
         self.window.show()
 
+        self.tank1_was_armed = False
+        self.tank2_was_armed = False
+
         threading.Thread(target=self.controller_read_loop, daemon=True).start()
 
     # def run(self):
@@ -102,16 +105,20 @@ class DriverStationUI:
                 if self.xbox_controller.LeftBumper:
                     if not self.cannon_ui.tank1.cannonArmed():
                         self.cannon_ui.tank1.armDisarm(True)
+                        self.tank1_was_armed = True
                 else:
-                    if self.cannon_ui.tank1.cannonArmed():
+                    if self.cannon_ui.tank1.cannonArmed() and self.tank1_was_armed:
                         self.cannon_ui.tank1.armDisarm(False)
+                        self.tank1_was_armed = False
 
                 if self.xbox_controller.RightBumper:
                     if not self.cannon_ui.tank2.cannonArmed():
                         self.cannon_ui.tank2.armDisarm(True)
+                        self.tank2_was_armed = True
                 else:
-                    if self.cannon_ui.tank2.cannonArmed():
+                    if self.cannon_ui.tank2.cannonArmed() and self.tank2_was_armed:
                         self.cannon_ui.tank2.armDisarm(False)
+                        self.tank2_was_armed = False
 
                 time.sleep(0.1)
         except Exception as e:
