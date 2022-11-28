@@ -274,10 +274,22 @@ class AirTankElement(QWidget):
     def on_arm_button_clicked(self):
         if self.arm_button.isChecked():
             self.arm_button.setStyleSheet("background-color: green; font-size: 15px;")
-            self.combined_topic.send_command("disarm")
+            self.armDisarm(False)
         else:
             self.arm_button.setStyleSheet("background-color: grey; font-size: 15px;")
+            self.armDisarm(True)
+
+    def armDisarm(self, state):
+        if state:
             self.combined_topic.send_command("arm")
+        else:
+            self.combined_topic.send_command("disarm")
+
+    def cannonArmed(self):
+        if self.combined_topic.is_armed():
+            return True
+        else:
+            return False
 
     @pyqtSlot()
     def on_auto_button_clicked(self):

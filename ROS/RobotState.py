@@ -431,6 +431,9 @@ class CannonCombinedTopic:
                 return False
         return True
 
+    def is_armed(self):
+        return self.get_state() == "Armed"
+
 
 class RobotState:
 

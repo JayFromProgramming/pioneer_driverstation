@@ -96,6 +96,22 @@ class DriverStationUI:
                     self.robot.execute_service("my_p3at/disable_motors")
                 if self.xbox_controller.X:
                     self.sonar_view.toggle()
+                if self.xbox_controller.Y:
+                    self.robot.execute_service("/can/fire")
+
+                if self.xbox_controller.LeftBumper:
+                    if not self.cannon_ui.tank1.cannonArmed():
+                        self.cannon_ui.tank1.armDisarm(True)
+                else:
+                    if self.cannon_ui.tank1.cannonArmed():
+                        self.cannon_ui.tank1.armDisarm(False)
+
+                if self.xbox_controller.RightBumper:
+                    if not self.cannon_ui.tank2.cannonArmed():
+                        self.cannon_ui.tank2.armDisarm(True)
+                else:
+                    if self.cannon_ui.tank2.cannonArmed():
+                        self.cannon_ui.tank2.armDisarm(False)
 
                 time.sleep(0.1)
         except Exception as e:
