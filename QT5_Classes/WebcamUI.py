@@ -11,7 +11,7 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtQuick import QQuickItem
 from PyQt5.QtWidgets import QWidget, QLabel, QOpenGLWidget
 
-from QT5_Classes.WebcamTest import NetworkMJPGImage
+# from QT5_Classes.WebcamTest import NetworkMJPGImage
 
 
 class WebcamWindow(QWidget):
@@ -30,7 +30,7 @@ class WebcamWindow(QWidget):
             self.image_label.move(0, 0)
 
             # self.quick_item = QQuickItem()
-            self.streamer = NetworkMJPGImage()
+            # self.streamer = NetworkMJPGImage()
 
             self.info_label = QLabel(self)
             self.info_label.setStyleSheet("QLabel { background-color : black; color : white; }")

@@ -10,7 +10,7 @@ from QT5_Classes.PointCloud2UI import PointCloud2UI
 from QT5_Classes.SignalUI import SignalUI
 from QT5_Classes.PioneerUI import PioneerUI
 from QT5_Classes.TopicStatusUI import TopicUI
-from QT5_Classes.WebcamUI import WebcamWindow
+# from QT5_Classes.WebcamUI import WebcamWindow
 from ROS.ROSInterface import ROSInterface
 from ROS.RobotState import RobotState
 
