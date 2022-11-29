@@ -19,6 +19,8 @@ class ConnectionUI(QWidget):
             with open("configs/lastIP.txt", "r") as f:
                 last_ip = f.read()
         else:
+            with open("configs/lastIP.txt", "w") as f:
+                f.write("")
             last_ip = ""
 
         self.header = QLabel("ROS Connection", self)
