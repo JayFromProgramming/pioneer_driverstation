@@ -18,6 +18,8 @@ class ConnectionUI(QWidget):
         if os.path.exists("configs/lastIP.txt"):
             with open("configs/lastIP.txt", "r") as f:
                 last_ip = f.read()
+        else:
+            last_ip = ""
 
         self.header = QLabel("ROS Connection", self)
         self.header.setStyleSheet("font-weight: bold; font-size: 17px")
