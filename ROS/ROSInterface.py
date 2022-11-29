@@ -1,6 +1,7 @@
 import time
 import traceback
 
+import paramiko
 import roslibpy
 import threading
 import logging
@@ -53,6 +54,33 @@ topic_targets = [
     # SmartTopic("compressor_voltage", "/ext/compressor/voltage"),
     # ImageHandler("Img", "/usb_cam/image_raw"),
 ]
+
+
+def ros_serial(address="localhost", username="ubuntu", password="ubuntu"):
+    logging.info("Connecting over SSH to %s", address)
+    ssh = paramiko.SSHClient()  # type: paramiko.SSHClient
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # Set policy to auto add host key
+    try:
+        ssh.connect(address, port=22, username=username, password=password)  # Connect to server
+    except Exception as e:
+        logging.error(f"SSH connection failed: {e}")
+        return False
+    else:
+        # Execute the ros start.py script
+        print("Starting ROSSERIAL to interface with the arduino")
+        stdin, stdout, stderr = ssh.exec_command("rosrun rosserial_python serial_node.py _port:=/dev/ttyACM0")
+        while not stdout.channel.exit_status_ready():
+            if stdout.channel.recv_ready():
+                print(stdout.channel.recv(1024).decode("utf-8"), end="")
+            if stderr.channel.recv_stderr_ready():
+                print(stderr.channel.recv_stderr(1024).decode("utf-8"), end="")
+
+        if stdout.channel.recv_exit_status() != 0:
+            logging.error("SSH command failed")
+            return False
+
+        ssh.close()
+        return True
 
 
 class RobotStateMonitor:
@@ -119,7 +147,7 @@ class ROSInterface:
 
         self.target_topics = topic_to_name.keys()
         self.smart_topics = topic_targets
-
+        self.rosserial_thread = None  # type: threading.Thread or None
         self.future_callbacks = []
 
     @property
@@ -141,6 +169,9 @@ class ROSInterface:
             self.robot_state_monitor.set_client(self.client)
             self.background_thread = threading.Thread(target=self._connect, daemon=True)
             self.background_thread.start()
+
+            self.rosserial_thread = threading.Thread(target=ros_serial, daemon=True, args=(address,))
+            self.rosserial_thread.start()
 
             # for smart_topic in self.smart_topics:
             #     smart_topic.connect()
