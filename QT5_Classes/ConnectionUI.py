@@ -15,6 +15,10 @@ class ConnectionUI(QWidget):
         self.robot = robot
         self.parent = parent
 
+        if os.path.isdir("configs"):
+            # Make the configs directory if it doesn't exist
+            os.mkdir("configs")
+
         if os.path.exists("configs/lastIP.txt"):
             with open("configs/lastIP.txt", "r") as f:
                 last_ip = f.read()
