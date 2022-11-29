@@ -15,7 +15,7 @@ class ConnectionUI(QWidget):
         self.robot = robot
         self.parent = parent
 
-        if os.path.isdir("configs"):
+        if not os.path.isdir("configs"):
             # Make the configs directory if it doesn't exist
             os.mkdir("configs")
 
