@@ -68,7 +68,8 @@ class PointCloud2UI(QOpenGLWidget):
     def open_webcam(self):
         """Open an ffplay window"""
         try:
-            subprocess.Popen(["ffplay", "-x", "480", "-y", "320", "-f", "mjpeg", f"http://{self.robot.address}:8080"])
+            subprocess.Popen(["ffplay", "-x", "480", "-y", "320", "-f", "mjpeg", f"http://{self.robot.address}:8080",
+                             "-vf", "transpose=2,transpose=2"])
         except Exception as e:
             logging.error(f"Error in open_webcam: {e} {traceback.format_exc()}")
 
